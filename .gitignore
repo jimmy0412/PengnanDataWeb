@@ -1,0 +1,8 @@
+.venv/
+.pydeps/
+__pycache__/
+*.pyc
+data/raw/
+data/processed/*.json
+data/processed/*.ods
+!data/samples/

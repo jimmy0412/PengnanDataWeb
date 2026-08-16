@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}資料表格 - 澎湖馬公 7 里人口資料{% endblock %}
+{% block subtitle %}以表格檢視彙整後的統計資料{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>年度指標（年份橫向）</h2>
+  <p class="hint">最左欄為年份；各指標欄分為男生、女生兩格。</p>
+  <div class="row">
+    <div class="field">
+      <label for="pivot-village">里別</label>
+      <select id="pivot-village">
+        <option value="澎南區">澎南區</option>
+        {% for v in villages %}
+        <option value="{{ v }}">{{ v }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field" style="min-width: 180px;">
+      <label for="pivot-years">年份（可多選）</label>
+      <select id="pivot-years" multiple size="5"></select>
+    </div>
+    <button id="btn-load-pivot" type="button">載入橫向表格</button>
+  </div>
+  <p id="pivot-meta" class="hint"></p>
+  <div class="export-toolbar">
+    <span class="hint">下載表格：</span>
+    <button type="button" class="secondary" data-export-table data-export-target="pivot-table-wrap" data-export-format="png">PNG</button>
+    <button type="button" class="secondary" data-export-table data-export-target="pivot-table-wrap" data-export-format="jpg">JPG</button>
+  </div>
+  <div class="table-wrap" id="pivot-table-wrap">
+    <table id="pivot-table" class="data-table">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <h2>明細資料</h2>
+  <div class="row">
+    <div class="field">
+      <label for="table-type">資料類型</label>
+      <select id="table-type">
+        <option value="age">年齡結構（五年齡組）</option>
+        <option value="indicators">年度指標</option>
+      </select>
+    </div>
+    <div class="field" style="min-width: 180px;">
+      <label for="table-years">年份（可多選）</label>
+      <select id="table-years" multiple size="5"></select>
+    </div>
+    <div class="field">
+      <label for="table-gender">性別</label>
+      <select id="table-gender">
+        <option value="全部" selected>全部</option>
+        <option value="男">男</option>
+        <option value="女">女</option>
+      </select>
+    </div>
+    <button id="btn-load-table" type="button">載入明細表格</button>
+  </div>
+  <p class="hint">里別（可複選）：</p>
+  <div class="village-checks">
+    <label><input class="village-cb" type="checkbox" value="澎南區" checked /> 澎南區</label>
+    {% for v in villages %}
+    <label><input class="village-cb" type="checkbox" value="{{ v }}" checked /> {{ v }}</label>
+    {% endfor %}
+  </div>
+  <p id="table-meta" class="hint"></p>
+  <div class="export-toolbar">
+    <span class="hint">下載表格：</span>
+    <button type="button" class="secondary" data-export-table data-export-target="detail-table-wrap" data-export-format="png">PNG</button>
+    <button type="button" class="secondary" data-export-table data-export-target="detail-table-wrap" data-export-format="jpg">JPG</button>
+  </div>
+  <div class="table-wrap" id="detail-table-wrap">
+    <table id="data-table" class="data-table">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+  window.VILLAGES = {{ villages | tojson }};
+  window.ALL_VILLAGES_LABEL = "澎南區";
+</script>
+<script src="/static/js/common.js"></script>
+<script src="/static/js/export.js"></script>
+<script src="/static/js/tables.js"></script>
+{% endblock %}

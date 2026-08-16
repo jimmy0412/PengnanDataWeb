@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}澎南區地圖 - 澎湖馬公 7 里人口資料{% endblock %}
+{% block subtitle %}可組合人口、指標與自訂資料的互動地圖{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+{% endblock %}
+{% block content %}
+<div class="map-editor">
+  <section class="card map-canvas-panel" aria-labelledby="map-heading">
+    <h2 id="map-heading">澎南區地圖</h2>
+    <div id="map-capture-area"><div id="map" class="map"></div></div>
+    <div id="map-legend" class="map-legend" aria-live="polite"></div>
+    <div id="map-info" class="map-info"><strong>地區資訊</strong><div id="map-info-content" class="hint">請將滑鼠移至地圖區域。</div></div>
+  </section>
+
+  <aside class="map-workspace" aria-label="地圖工作區">
+    <details class="card map-workspace-section" open>
+      <summary><span>圖層工作區</span></summary>
+      <div class="map-workspace-section-body">
+        <p class="hint">清單最上方就是地圖最上層。勾選可顯示或隱藏，拖曳可自由排序；設定只儲存在目前瀏覽器。</p>
+        <div class="row"><div class="field"><label for="map-year">內建資料年份</label><select id="map-year"></select></div></div>
+        <ul id="layer-list" class="layer-list" aria-label="地圖圖層"></ul>
+        <div id="map-layer-status" class="hint map-layer-status" role="status"></div>
+      </div>
+    </details>
+
+    <details class="card map-workspace-section" open>
+      <summary><span>新增共享圖表圖層</span></summary>
+      <div class="map-workspace-section-body">
+        <details class="custom-layer-form" open>
+          <summary>使用現有資料</summary>
+          <form id="existing-data-layer-form" class="map-workspace-form">
+            <div class="field"><label for="existing-layer-name">圖層名稱</label><input id="existing-layer-name" name="name" type="text" required maxlength="100" /></div>
+            <div class="field"><label for="existing-layer-year">年份</label><select id="existing-layer-year" name="year" required></select></div>
+            <div class="field"><label for="existing-layer-data-type">資料類型</label><select id="existing-layer-data-type" name="data_type"><option value="indicators">年度指標</option><option value="age">年齡結構</option></select></div>
+            <div class="field" id="existing-layer-metric-field"><label for="existing-layer-metric">指標</label><select id="existing-layer-metric" name="metric"><option value="總人口">總人口</option><option value="扶老比">扶老比</option><option value="出生率">出生率</option><option value="自然增加率">自然增加率</option><option value="年出生">年出生</option><option value="年死亡">年死亡</option></select></div>
+            <div class="field"><label for="existing-layer-gender">性別</label><select id="existing-layer-gender" name="gender"><option value="全部">全部</option><option value="男">男</option><option value="女">女</option></select></div>
+            <div class="field"><label for="existing-layer-chart-type">圖表類型</label><select id="existing-layer-chart-type" name="chart_type"><option value="bar">長條圖</option><option value="pie">圓餅圖</option><option value="donut">甜甜圈圖</option></select></div>
+            <button type="submit">建立共享圖層</button>
+          </form>
+          <div id="existing-layer-status" class="hint form-status" role="status"></div>
+        </details>
+
+        <details class="custom-layer-form">
+          <summary>上傳 CSV</summary>
+          <p class="hint">CSV 必須有「里」欄位，其餘欄位為數值資料。支援本區 7 里名稱。</p>
+          <form id="custom-layer-upload" class="map-workspace-form" enctype="multipart/form-data">
+            <div class="field"><label for="custom-layer-name">圖層名稱</label><input id="custom-layer-name" name="name" type="text" required maxlength="100" /></div>
+            <div class="field"><label for="custom-layer-chart-type">圖表類型</label><select id="custom-layer-chart-type" name="chart_type"><option value="bar">長條圖</option><option value="pie">圓餅圖</option><option value="donut">甜甜圈圖</option></select></div>
+            <div class="field"><label for="custom-layer-file">CSV 檔案</label><input id="custom-layer-file" name="file" type="file" accept=".csv,text/csv" required /></div>
+            <button type="submit">上傳圖層</button>
+          </form>
+          <div id="custom-layer-upload-status" class="hint form-status" role="status"></div>
+        </details>
+      </div>
+    </details>
+
+    <details class="card map-workspace-section" open>
+      <summary><span>區域色彩設定</span></summary>
+      <div class="map-workspace-section-body">
+        <p class="hint">設定實心 GeoJSON 底圖中每個里的區域顏色。</p>
+        <div class="row"><button id="btn-reset-colors" type="button" class="secondary">重設預設色彩</button></div>
+        <div id="map-colors" class="color-grid map-color-grid"></div>
+      </div>
+    </details>
+
+    <details class="card map-workspace-section" open>
+      <summary><span>PNG 匯出設定</span></summary>
+      <div class="map-workspace-section-body">
+        <div class="export-toolbar"><label for="custom-print-width">寬度 (px)</label><input type="number" id="custom-print-width" value="2560" min="800" step="160" /><label for="custom-print-height">高度 (px，16:9）</label><input type="number" id="custom-print-height" value="1440" readonly /><button id="btn-export-map" type="button" class="secondary">下載 PNG</button></div>
+      </div>
+    </details>
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet-easyprint@2.1.9/dist/bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.minichart@0.2.5/dist/leaflet.minichart.min.js"></script>
+<script>window.VILLAGES = {{ villages | tojson }};</script>
+<script src="/static/js/common.js"></script>
+<script src="/static/js/map.js"></script>
+{% endblock %}

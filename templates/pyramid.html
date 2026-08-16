@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}人口金字塔 - 澎湖馬公 7 里人口資料{% endblock %}
+{% block subtitle %}依五年齡組檢視人口結構{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>圖表設定</h2>
+  <div class="row">
+    <div class="field">
+      <label for="pyramid-year">年份</label>
+      <select id="pyramid-year"></select>
+    </div>
+    <div class="field">
+      <label for="pyramid-village">里別</label>
+      <select id="pyramid-village">
+        <option value="澎南區">澎南區</option>
+        {% for v in villages %}
+        <option value="{{ v }}">{{ v }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="color-male">男性顏色</label>
+      <input id="color-male" type="color" />
+    </div>
+    <div class="field">
+      <label for="color-female">女性顏色</label>
+      <input id="color-female" type="color" />
+    </div>
+    <button id="btn-refresh" type="button" class="secondary">更新圖表</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>人口金字塔</h2>
+  <div class="export-toolbar">
+    <span class="hint">下載圖表：</span>
+    <button type="button" class="secondary" data-export-chart data-export-format="png">PNG</button>
+    <button type="button" class="secondary" data-export-chart data-export-format="jpg">JPG</button>
+  </div>
+  <div class="chart-box">
+    <canvas id="pyramid-chart"></canvas>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.VILLAGES = {{ villages | tojson }};
+  window.ALL_VILLAGES_LABEL = "澎南區";
+</script>
+<script src="/static/js/common.js"></script>
+<script src="/static/js/export.js"></script>
+<script src="/static/js/pyramid.js"></script>
+{% endblock %}

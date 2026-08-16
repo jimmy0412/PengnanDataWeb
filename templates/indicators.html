@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}年度指標 - 澎湖澎南區人口資料{% endblock %}
+{% block subtitle %}澎湖澎南區各里之年度指標趨勢{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>圖表設定</h2>
+  <div class="row">
+    <div class="field" style="min-width: 180px;">
+      <label for="chart-years">年份（可多選）</label>
+      <select id="chart-years" multiple size="5"></select>
+    </div>
+    <div class="field">
+      <label for="line-metric">指標</label>
+      <select id="line-metric">
+        {% for m in line_chart_metrics %}
+        <option value="{{ m.key }}"{% if loop.first %} selected{% endif %}>{{ m.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="line-gender">性別</label>
+      <select id="line-gender">
+        <option value="全部" selected>全部</option>
+        <option value="男">男</option>
+        <option value="女">女</option>
+      </select>
+    </div>
+    <button id="btn-refresh" type="button" class="secondary">更新圖表</button>
+  </div>
+  <p class="hint">選擇要顯示的里別（可複選）：</p>
+  <div class="village-checks">
+    <label><input class="village-cb" type="checkbox" value="澎南區" checked /> 澎南區 </label>
+    {% for v in villages %}
+    <label><input class="village-cb" type="checkbox" value="{{ v }}" checked /> {{ v }}</label>
+    {% endfor %}
+  </div>
+  <p class="hint" style="margin-top:0.75rem;">折線圖顏色</p>
+  <div id="line-colors" class="color-grid"></div>
+</section>
+
+<section class="card">
+  <h2 id="line-chart-title">年度指標折線圖</h2>
+  <div class="export-toolbar">
+    <span class="hint">下載圖表：</span>
+    <button type="button" class="secondary" data-export-chart data-export-format="png">PNG</button>
+    <button type="button" class="secondary" data-export-chart data-export-format="jpg">JPG</button>
+  </div>
+  <div class="chart-box">
+    <canvas id="line-chart"></canvas>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.VILLAGES = {{ villages | tojson }};
+  window.ALL_VILLAGES_LABEL = "澎南區";
+  window.LINE_CHART_METRICS = {{ line_chart_metrics | tojson }};
+</script>
+<script src="/static/js/common.js"></script>
+<script src="/static/js/export.js"></script>
+<script src="/static/js/indicators.js"></script>
+{% endblock %}

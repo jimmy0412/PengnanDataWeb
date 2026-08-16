@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}澎南區人口資料{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+  <header>
+    <h1>澎南區人口資料</h1>
+    <p>{% block subtitle %}澎南區人口統計與圖表{% endblock %}</p>
+    <nav class="site-nav">
+      <a href="/" class="{% if active == 'process' %}active{% endif %}">資料彙整</a>
+      <a href="/pyramid" class="{% if active == 'pyramid' %}active{% endif %}">人口金字塔</a>
+      <a href="/indicators" class="{% if active == 'indicators' %}active{% endif %}">年度指標折線圖</a>
+      <a href="/tables" class="{% if active == 'tables' %}active{% endif %}">資料表格</a>
+      <a href="/map" class="{% if active == 'map' %}active{% endif %}">澎南區地圖</a>
+    </nav>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

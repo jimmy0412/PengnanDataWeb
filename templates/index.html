@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}資料彙整 - 澎湖澎南區人口資料{% endblock %}
+{% block subtitle %}下載政府統計並產出統整 ODS{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>下載與彙整</h2>
+  <p class="hint">目標里：鐵線里、嵵裡里、風櫃里、井垵里、五德里、鎖港里、山水里（含「澎南區」合計）</p>
+  <div class="row">
+    <div class="field" style="flex: 1; min-width: 220px;">
+      <label for="years-input">民國年份（例：110-114 或 110,111,112）</label>
+      <input id="years-input" type="text" value="110-114" placeholder="110-114" />
+    </motion.div>
+    <button id="btn-process" type="button">開始下載並彙整</button>
+  </div>
+  <div id="ods-links" class="ods-links hidden">
+    <a id="ods-download-age" class="download-link" href="/api/download/ods/age">下載年齡結構 ODS</a>
+    <a id="ods-download-indicators" class="download-link" href="/api/download/ods/indicators">下載戶政指標 ODS</a>
+  </div>
+  <pre id="log"></pre>
+</section>
+
+<section class="card">
+  <h2>處理狀態</h2>
+  <p id="status-text" class="hint">載入中…</p>
+  <p class="hint">完成彙整後會產出兩份 ODS：年齡分布統整、戶政資料統整。</p>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/common.js"></script>
+<script src="/static/js/process.js"></script>
+{% endblock %}
