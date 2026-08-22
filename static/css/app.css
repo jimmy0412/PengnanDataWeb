@@ -269,6 +269,52 @@ button.danger {
   gap: 0.75rem;
 }
 
+.line-color-settings {
+  margin-top: 0.9rem;
+}
+
+.line-color-settings > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #f4f8fa;
+  color: var(--accent);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.line-color-settings > summary:hover {
+  background: #e8f1f5;
+}
+
+.line-color-settings > summary::-webkit-details-marker {
+  display: none;
+}
+
+.line-color-settings > summary::after {
+  content: "▸";
+  color: var(--accent);
+  transition: transform 0.15s ease;
+}
+
+.line-color-settings[open] > summary::after {
+  transform: rotate(90deg);
+}
+
+.line-color-settings > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.line-color-settings > .color-grid {
+  padding: 0.9rem 0.25rem 0.25rem;
+}
+
 #log {
   font-family: ui-monospace, monospace;
   font-size: 0.82rem;

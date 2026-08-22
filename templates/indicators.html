@@ -43,8 +43,10 @@
     <label><input class="village-cb" type="checkbox" value="{{ v }}" checked /> {{ v }}</label>
     {% endfor %}
   </div>
-  <p class="hint" style="margin-top:0.75rem;">折線圖顏色</p>
-  <div id="line-colors" class="color-grid"></div>
+  <details class="line-color-settings">
+    <summary>折線圖顏色</summary>
+    <div id="line-colors" class="color-grid"></div>
+  </details>
 </section>
 
 <section class="card">
@@ -66,7 +68,7 @@
   window.ALL_VILLAGES_LABEL = "澎南區";
   window.LINE_CHART_METRICS = {{ line_chart_metrics | tojson }};
 </script>
-<script src="/static/js/common.js?v=2"></script>
+<script src="/static/js/common.js?v=3"></script>
 <script src="/static/js/export.js"></script>
 <script src="/static/js/indicators.js?v=2"></script>
 {% endblock %}

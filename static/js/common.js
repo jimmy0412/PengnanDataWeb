@@ -1,16 +1,34 @@
 const COLOR_KEY = "penghu_population_colors";
 
+const LEGACY_LINE_COLORS = ["#1a6b8a", "#c2410c", "#15803d", "#7c3aed", "#b45309", "#be123c", "#0e7490"];
+const DEFAULT_LINE_COLORS = ["#4e79a7", "#f28e2b", "#59a14f", "#e15759", "#b07aa1", "#76b7b2", "#edc948", "#ff9da7"];
+
 const defaultColors = {
   male: "#3b82f6",
   female: "#ec4899",
-  line: ["#1a6b8a", "#c2410c", "#15803d", "#7c3aed", "#b45309", "#be123c", "#0e7490"],
+  line: DEFAULT_LINE_COLORS,
 };
 
 function loadColors() {
   try {
-    return { ...defaultColors, ...JSON.parse(localStorage.getItem(COLOR_KEY) || "{}") };
+    const saved = JSON.parse(localStorage.getItem(COLOR_KEY) || "{}");
+    const usesLegacyLineColors =
+      Array.isArray(saved.line) &&
+      saved.line.length === LEGACY_LINE_COLORS.length &&
+      saved.line.every(
+        (color, index) => typeof color === "string" && color.toLowerCase() === LEGACY_LINE_COLORS[index]
+      );
+    const savedLineColors = Array.isArray(saved.line) ? saved.line : [];
+    const lineColors = usesLegacyLineColors
+      ? [...DEFAULT_LINE_COLORS]
+      : [...savedLineColors, ...DEFAULT_LINE_COLORS.slice(savedLineColors.length)];
+    return {
+      ...defaultColors,
+      ...saved,
+      line: lineColors,
+    };
   } catch {
-    return { ...defaultColors };
+    return { ...defaultColors, line: [...DEFAULT_LINE_COLORS] };
   }
 }
 
