@@ -5,7 +5,17 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, File, Form, HTTPException, Query, Request, Response, UploadFile
+from fastapi import (
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -15,6 +25,7 @@ from app.config import (
     ALL_VILLAGES_LABEL,
     LINE_CHART_METRICS,
     STATIC_DIR,
+    STATISTICS_PAGE_URL,
     TARGET_VILLAGES,
     TEMPLATES_DIR,
 )
@@ -27,7 +38,8 @@ from app.services.map_layers import (
     delete_custom_layer,
     load_custom_layers,
 )
-from app.services.pipeline import process_years
+from app.services.jobs import create_job, get_job, submit_job
+from app.services.pipeline import delete_year, process_years
 from app.services.query_data import (
     build_indicators_pivot,
     build_map_village_data,
@@ -56,6 +68,10 @@ class MapLayerFromDataRequest(BaseModel):
     metric: str | None = None
 
 
+class DeleteYearRequest(BaseModel):
+    year: int = Field(..., ge=1)
+
+
 def _page_context(request: Request, active: str) -> dict:
     status = load_status()
     return {
@@ -64,6 +80,7 @@ def _page_context(request: Request, active: str) -> dict:
         "villages": TARGET_VILLAGES,
         "all_villages_label": ALL_VILLAGES_LABEL,
         "processed_years": status.get("processed_years", []),
+        "statistics_page_url": STATISTICS_PAGE_URL,
     }
 
 
@@ -101,6 +118,16 @@ async def api_status():
 
 @app.post("/api/process")
 async def api_process(body: ProcessRequest):
+    years = _parse_process_request(body)
+
+    try:
+        return process_years(years, download=body.download)
+    except Exception as exc:
+        # Keep API errors as JSON so the browser can display a useful message.
+        raise HTTPException(status_code=500, detail=f"彙整處理失敗: {exc}") from exc
+
+
+def _parse_process_request(body: ProcessRequest) -> list[int]:
     years = body.years or []
     if body.years_text:
         try:
@@ -109,12 +136,40 @@ async def api_process(body: ProcessRequest):
             raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not years:
         raise HTTPException(status_code=400, detail="請提供至少一個民國年")
+    return years
 
-    try:
-        return process_years(years, download=body.download)
-    except Exception as exc:
-        # Keep API errors as JSON so the browser can display a useful message.
-        raise HTTPException(status_code=500, detail=f"彙整處理失敗: {exc}") from exc
+
+@app.post("/api/jobs/process", status_code=status.HTTP_202_ACCEPTED)
+async def api_start_process(body: ProcessRequest):
+    years = _parse_process_request(body)
+    job = create_job("process")
+    submit_job(
+        job["id"],
+        lambda report: process_years(years, download=body.download, progress=report),
+    )
+    return job
+
+
+@app.post("/api/jobs/delete-year", status_code=status.HTTP_202_ACCEPTED)
+async def api_start_delete_year(
+    body: DeleteYearRequest,
+):
+    if body.year not in load_status().get("processed_years", []):
+        raise HTTPException(status_code=404, detail=f"找不到 {body.year} 年的已彙整資料")
+    job = create_job("delete_year")
+    submit_job(
+        job["id"],
+        lambda report: delete_year(body.year, progress=report),
+    )
+    return job
+
+
+@app.get("/api/jobs/{job_id}")
+async def api_get_job(job_id: str):
+    job = get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="找不到指定的工作")
+    return job
 
 
 @app.get("/api/age-structure")

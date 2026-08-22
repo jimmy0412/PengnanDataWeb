@@ -243,3 +243,22 @@ def delete_custom_layer(layer_id: str) -> bool:
     if isinstance(source_file, str) and source_file and Path(source_file).name == source_file:
         (MAP_LAYERS_DIR / source_file).unlink(missing_ok=True)
     return True
+
+
+def delete_processed_layers_for_year(year: int) -> int:
+    """Remove immutable map snapshots derived from one processed year."""
+    layers = load_custom_layers()
+    kept: list[dict] = []
+    removed = 0
+    for layer in layers:
+        source_meta = layer.get("source_meta") or {}
+        if (
+            layer.get("source_type") == "processed_data"
+            and source_meta.get("year") == year
+        ):
+            removed += 1
+            continue
+        kept.append(layer)
+    if removed:
+        _write_catalog(kept)
+    return removed

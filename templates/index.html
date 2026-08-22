@@ -10,8 +10,15 @@
     <div class="field" style="flex: 1; min-width: 220px;">
       <label for="years-input">民國年份（例：110-114 或 110,111,112）</label>
       <input id="years-input" type="text" value="110-114" placeholder="110-114" />
-    </motion.div>
+    </div>
     <button id="btn-process" type="button">開始下載並彙整</button>
+  </div>
+  <div id="job-progress" class="job-progress hidden" aria-live="polite">
+    <div class="job-progress-header">
+      <span id="progress-stage">準備中…</span>
+      <span id="progress-percent">0%</span>
+    </div>
+    <progress id="progress-bar" max="100" value="0">0%</progress>
   </div>
   <div id="ods-links" class="ods-links hidden">
     <a id="ods-download-age" class="download-link" href="/api/download/ods/age">下載年齡結構 ODS</a>
@@ -21,13 +28,30 @@
 </section>
 
 <section class="card">
+  <h2>刪除年度資料</h2>
+  <p class="hint">會刪除該年份的原始檔、彙整快取，以及由該年資料建立的共享地圖快照，並重新產生統整 ODS。自行上傳的 CSV 圖層不受影響。</p>
+  <div class="row">
+    <div class="field" style="flex: 1; min-width: 220px;">
+      <label for="delete-year">已彙整年份</label>
+      <select id="delete-year">
+        {% for year in processed_years %}
+        <option value="{{ year }}">{{ year }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button id="btn-delete-year" class="danger" type="button">刪除所選年份</button>
+  </div>
+</section>
+
+<section class="card">
   <h2>處理狀態</h2>
   <p id="status-text" class="hint">載入中…</p>
   <p class="hint">完成彙整後會產出兩份 ODS：年齡分布統整、戶政資料統整。</p>
+  <p class="hint">資料來源：<a href="{{ statistics_page_url }}" target="_blank" rel="noopener noreferrer">馬公市戶政事務所統計資料頁</a>（m31 年齡結構、m11 戶籍動態）</p>
 </section>
 {% endblock %}
 
 {% block scripts %}
 <script src="/static/js/common.js"></script>
-<script src="/static/js/process.js"></script>
+<script src="/static/js/process.js?v=2"></script>
 {% endblock %}
