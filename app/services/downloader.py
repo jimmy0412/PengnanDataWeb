@@ -3,12 +3,25 @@
 from __future__ import annotations
 
 import re
+import ssl
 from pathlib import Path
 from urllib.parse import urljoin
 
 import httpx
 
 from app.config import FILE_BASE_URL, RAW_DIR, STATISTICS_PAGE_URL
+
+
+def _create_ssl_context() -> ssl.SSLContext:
+    """Build a secure context compatible with the source site's legacy chain."""
+    context = ssl.create_default_context()
+    strict_flag = getattr(ssl, "VERIFY_X509_STRICT", 0)
+    if strict_flag:
+        # Some Python/OpenSSL versions enable strict verification by default.
+        # The government site's certificate chain lacks a Subject Key Identifier,
+        # which strict mode rejects even though normal CA/hostname checks pass.
+        context.verify_flags &= ~strict_flag
+    return context
 
 
 def _normalize_href(href: str) -> str:
@@ -19,7 +32,12 @@ def fetch_file_links() -> dict[str, dict[str, str]]:
     """
     Scrape statistics page and return {year: {m31: url, m11: url}}.
     """
-    response = httpx.get(STATISTICS_PAGE_URL, timeout=60, follow_redirects=True)
+    response = httpx.get(
+        STATISTICS_PAGE_URL,
+        timeout=60,
+        follow_redirects=True,
+        verify=_create_ssl_context(),
+    )
     response.raise_for_status()
     html = response.text
 
@@ -76,7 +94,13 @@ def download_year_files(
             continue
 
         try:
-            with httpx.stream("GET", url, timeout=120, follow_redirects=True) as resp:
+            with httpx.stream(
+                "GET",
+                url,
+                timeout=120,
+                follow_redirects=True,
+                verify=_create_ssl_context(),
+            ) as resp:
                 resp.raise_for_status()
                 with dest.open("wb") as f:
                     for chunk in resp.iter_bytes():

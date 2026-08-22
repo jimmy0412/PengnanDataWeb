@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -17,17 +18,27 @@ from app.services.parse_utils import (
 )
 
 
-def _find_header_row(df: pd.DataFrame) -> int:
-    for i in range(min(5, len(df))):
-        row = [cell_str(v) for v in df.iloc[i]]
-        if "人口數" in row and "區域別" in row:
-            return i
+def _find_header(df: pd.DataFrame) -> tuple[int, pd.Series]:
+    """Return the last header row index and normalized column labels."""
+    rows = min(10, len(df))
+    for i in range(rows):
+        row = pd.Series([cell_str(v) for v in df.iloc[i]])
+        if "人口數" in row.values and "區域別" in row.values:
+            return i, row
+
+        if i + 1 < rows:
+            next_row = [cell_str(v) for v in df.iloc[i + 1]]
+            combined = pd.Series(
+                [f"{left}{right}" for left, right in zip(row, next_row)]
+            )
+            if "人口數" in combined.values and "區域別" in combined.values:
+                return i + 1, combined
     raise ValueError("Could not find header row with 人口數")
 
 
-def _col_index(header_row: pd.Series, name: str) -> int | None:
+def _col_index(header_row: pd.Series, *names: str) -> int | None:
     for idx, raw in enumerate(header_row):
-        if cell_str(raw) == name:
+        if cell_str(raw) in names:
             return idx
     return None
 
@@ -47,19 +58,26 @@ def parse_m11_monthly(path: Path, year: int) -> tuple[list[dict], list[str]]:
     monthly: list[dict] = []
 
     for sheet in sheets:
-        month_m = __import__("re").search(r"年(\d{1,2})月", sheet)
+        month_m = re.search(r"年\s*(\d{1,2})月", sheet)
         month = int(month_m.group(1)) if month_m else 0
 
         df = read_sheet(path, sheet)
-        header_idx = _find_header_row(df)
-        header = df.iloc[header_idx]
+        header_idx, header = _find_header(df)
         pop_col = _col_index(header, "人口數")
-        birth_col = _col_index(header, "嬰兒出生總數_合計")
+        gender_col = _col_index(header, "性別")
+        birth_col = _col_index(header, "嬰兒出生總數_合計", "出生人數")
         death_col = _col_index(header, "死亡人數")
-        if pop_col is None or birth_col is None or death_col is None:
+        if (
+            pop_col is None
+            or gender_col is None
+            or birth_col is None
+            or death_col is None
+        ):
             raise ValueError(f"Missing columns in {sheet}")
 
-        blocks = extract_village_blocks(df.iloc[header_idx + 1 :], gender_col=4)
+        blocks = extract_village_blocks(
+            df.iloc[header_idx + 1 :], gender_col=gender_col
+        )
         for village in TARGET_VILLAGES:
             genders = blocks.get(village, {})
             if not genders:

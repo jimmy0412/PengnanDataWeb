@@ -9,7 +9,9 @@ from app.services.aggregate import build_annual_indicators, merge_year_cache
 from app.services.downloader import download_year_files, fetch_file_links, resolve_local_files
 from app.services.export_ods import (
     export_consolidated,
+    list_cached_years,
     load_status,
+    load_year_cache,
     write_status,
     write_year_cache,
 )
@@ -85,16 +87,30 @@ def process_year(
 
 
 def process_years(years: list[int], download: bool = True) -> dict:
-    links = fetch_file_links() if download else None
+    links = None
+    link_error = None
+    if download:
+        try:
+            links = fetch_file_links()
+        except Exception as exc:
+            # A temporary outage of the source site must not turn the whole API
+            # response into a plain-text 500.  The year loop below can still
+            # fall back to files already present in data/raw/{year}.
+            links = {}
+            link_error = f"無法讀取政府統計頁下載連結: {exc}"
     all_age: list[dict] = []
     all_ind: list[dict] = []
-    all_warnings: list[str] = []
+    all_warnings: list[str] = [link_error] if link_error else []
     all_errors: list[str] = []
     processed: list[int] = []
 
     for year in sorted(set(years)):
         try:
-            result = process_year(year, links=links, download=download)
+            result = process_year(
+                year,
+                links=links,
+                download=download and link_error is None,
+            )
             all_age.extend(result["age_records"])
             all_ind.extend(result["indicators"])
             all_warnings.extend(result["warnings"])
@@ -103,15 +119,28 @@ def process_years(years: list[int], download: bool = True) -> dict:
         except Exception as exc:
             all_errors.append(f"{year} 年處理失敗: {exc}")
 
+    available_years = list_cached_years()
     ods_age_path = None
     ods_indicators_path = None
     if processed:
+        all_age = []
+        all_ind = []
+        for year in available_years:
+            cache = load_year_cache(year)
+            if not cache:
+                continue
+            all_age.extend(cache.get("age_structure", []))
+            all_ind.extend(cache.get("indicators", []))
         ods_age_path, ods_indicators_path, _ = export_consolidated(
-            all_age, all_ind, processed
+            all_age, all_ind, available_years
         )
+    else:
+        previous_status = load_status()
+        ods_age_path = previous_status.get("ods_age_path")
+        ods_indicators_path = previous_status.get("ods_indicators_path")
 
     status = {
-        "processed_years": processed,
+        "processed_years": available_years,
         "warnings": all_warnings,
         "errors": all_errors,
         "ods_age_path": str(ods_age_path) if ods_age_path else None,
@@ -120,7 +149,8 @@ def process_years(years: list[int], download: bool = True) -> dict:
     write_status(status)
 
     return {
-        "processed_years": processed,
+        "processed_years": available_years,
+        "processed_this_run": processed,
         "warnings": all_warnings,
         "errors": all_errors,
         "ods_age_path": str(ods_age_path) if ods_age_path else None,

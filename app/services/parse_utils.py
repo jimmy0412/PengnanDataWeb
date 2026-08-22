@@ -28,8 +28,13 @@ def read_sheet(path: Path, sheet_name: str) -> pd.DataFrame:
 
 
 def find_year_sheets(xl: pd.ExcelFile, year: int) -> list[str]:
-    prefix = f"{year}年"
-    return [s for s in xl.sheet_names if s.startswith(prefix)]
+    pattern = re.compile(rf"^{re.escape(str(year))}_?\s*年\s*(\d{{1,2}})月")
+    matches: list[tuple[int, str]] = []
+    for sheet in xl.sheet_names:
+        match = pattern.match(sheet)
+        if match:
+            matches.append((int(match.group(1)), sheet))
+    return [sheet for _, sheet in sorted(matches)]
 
 
 def pick_december_sheet(xl: pd.ExcelFile, year: int) -> tuple[str, list[str]]:
@@ -38,7 +43,7 @@ def pick_december_sheet(xl: pd.ExcelFile, year: int) -> tuple[str, list[str]]:
     target = f"{year}年12月"
     if target in xl.sheet_names:
         return target, warnings
-    monthly = sorted(find_year_sheets(xl, year))
+    monthly = find_year_sheets(xl, year)
     if not monthly:
         raise ValueError(f"No sheets found for year {year}")
     warnings.append(f"{year} 年無 12 月 sheet，改用 {monthly[-1]}")
@@ -91,24 +96,44 @@ def extract_village_blocks(
 ) -> dict[str, dict[str, pd.Series]]:
     """
     Parse village rows from m31/m11 style tables.
-    m31 uses gender in column 1; m11 uses column 4.
+    ``gender_col`` is detected from the header by each format-specific parser.
     Returns {village: {gender: row_series}} for 計/男/女.
     """
     blocks: dict[str, dict[str, pd.Series]] = {}
     current_village: str | None = None
+    pending_total: pd.Series | None = None
 
     for _, row in df.iterrows():
         col0 = cell_str(row.iloc[0])
         gender_cell = cell_str(row.iloc[gender_col]) if len(row) > gender_col else ""
 
+        if gender_cell == "計":
+            if col0 in TARGET_VILLAGES:
+                current_village = col0
+                blocks.setdefault(current_village, {})["計"] = row
+                pending_total = None
+            else:
+                # In older files the village name is placed on the following
+                # male row, while its total row has an empty first cell.
+                pending_total = row
+                current_village = None
+            continue
+
         if col0 in TARGET_VILLAGES:
             current_village = col0
             blocks.setdefault(current_village, {})
+            if pending_total is not None:
+                blocks[current_village]["計"] = pending_total
+            pending_total = None
+        elif col0:
+            # A named row outside the target villages starts another block.
+            current_village = None
+            pending_total = None
 
         if current_village is None or current_village not in TARGET_VILLAGES:
             continue
 
-        if gender_cell in ("計", "男", "女"):
+        if gender_cell in ("男", "女"):
             blocks[current_village][gender_cell] = row
 
     return blocks

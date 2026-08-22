@@ -110,7 +110,11 @@ async def api_process(body: ProcessRequest):
     if not years:
         raise HTTPException(status_code=400, detail="請提供至少一個民國年")
 
-    return process_years(years, download=body.download)
+    try:
+        return process_years(years, download=body.download)
+    except Exception as exc:
+        # Keep API errors as JSON so the browser can display a useful message.
+        raise HTTPException(status_code=500, detail=f"彙整處理失敗: {exc}") from exc
 
 
 @app.get("/api/age-structure")

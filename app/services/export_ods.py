@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -52,20 +53,36 @@ def write_status(status: dict) -> Path:
 def load_status() -> dict:
     from app.config import STATUS_FILE
 
-    if not STATUS_FILE.exists():
-        return {
+    if STATUS_FILE.exists():
+        with STATUS_FILE.open(encoding="utf-8") as f:
+            data = json.load(f)
+    else:
+        data = {
             "processed_years": [],
             "warnings": [],
             "errors": [],
             "ods_age_path": None,
             "ods_indicators_path": None,
         }
-    with STATUS_FILE.open(encoding="utf-8") as f:
-        data = json.load(f)
+    # Per-year caches are the source of truth.  A previous one-year run may
+    # have overwritten processed_years even though other caches still exist.
+    data["processed_years"] = sorted(
+        set(data.get("processed_years", [])) | set(list_cached_years())
+    )
     # backward compatibility
     if data.get("ods_path") and not data.get("ods_age_path"):
         data["ods_age_path"] = data["ods_path"]
     return data
+
+
+def list_cached_years() -> list[int]:
+    """Return years that have a persisted per-year JSON cache."""
+    years: list[int] = []
+    for path in PROCESSED_DIR.glob("cache_*.json"):
+        match = re.fullmatch(r"cache_(\d+)\.json", path.name)
+        if match:
+            years.append(int(match.group(1)))
+    return sorted(set(years))
 
 
 def load_year_cache(year: int) -> dict | None:

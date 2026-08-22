@@ -19,9 +19,21 @@ async function runProcess() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ years_text: text, download: true }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || "處理失敗");
-    logTo("log", `完成：已處理 ${data.processed_years.join(", ")} 年`);
+    const contentType = res.headers.get("content-type") || "";
+    let data;
+    if (contentType.includes("application/json")) {
+      data = await res.json();
+    } else {
+      const message = (await res.text()).trim();
+      throw new Error(message || `伺服器回應異常（HTTP ${res.status}）`);
+    }
+    if (!res.ok) throw new Error(data.detail || `處理失敗（HTTP ${res.status}）`);
+    const completed = data.processed_this_run ?? data.processed_years ?? [];
+    if (completed.length) {
+      logTo("log", `完成：已處理 ${completed.join(", ")} 年`);
+    } else {
+      logTo("log", "未能完成任何年份，請查看下方錯誤訊息。");
+    }
     if (data.warnings?.length) logTo("log", "警告：\n" + data.warnings.join("\n"));
     if (data.errors?.length) logTo("log", "錯誤：\n" + data.errors.join("\n"));
     showOdsLinks(data);
