@@ -12,7 +12,11 @@
   <div class="row">
     <div class="field">
       <span class="field-label">年份（可複選）</span>
-      <div id="chart-years" class="year-checks" role="group" aria-label="年份"></div>
+      <div id="chart-years" class="year-checks" role="group" aria-label="年份">
+        {% for year in processed_years %}
+        <label><input class="year-cb" type="checkbox" value="{{ year }}" checked /> {{ year }}</label>
+        {% endfor %}
+      </div>
     </div>
     <div class="field">
       <label for="line-metric">指標</label>
@@ -62,7 +66,7 @@
   window.ALL_VILLAGES_LABEL = "澎南區";
   window.LINE_CHART_METRICS = {{ line_chart_metrics | tojson }};
 </script>
-<script src="/static/js/common.js"></script>
+<script src="/static/js/common.js?v=2"></script>
 <script src="/static/js/export.js"></script>
-<script src="/static/js/indicators.js"></script>
+<script src="/static/js/indicators.js?v=2"></script>
 {% endblock %}

@@ -77,10 +77,14 @@ def test_chart_and_table_pages_render_checkbox_year_pickers():
     assert indicators_response.status_code == 200
     assert 'id="chart-years" class="year-checks"' in indicators_response.text
     assert 'id="chart-years" multiple' not in indicators_response.text
+    assert indicators_response.text.count('class="year-cb"') == 2
+    assert "/static/js/common.js?v=2" in indicators_response.text
 
     assert tables_response.status_code == 200
     assert 'id="pivot-years" class="year-checks"' in tables_response.text
     assert 'id="table-years" class="year-checks"' in tables_response.text
+    assert tables_response.text.count('class="year-cb"') == 4
+    assert "/static/js/common.js?v=2" in tables_response.text
 
 
 def test_table_details_are_collapsed_by_default():

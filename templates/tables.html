@@ -18,7 +18,11 @@
     </div>
     <div class="field">
       <span class="field-label">年份（可複選）</span>
-      <div id="pivot-years" class="year-checks" role="group" aria-label="年度指標年份"></div>
+      <div id="pivot-years" class="year-checks" role="group" aria-label="年度指標年份">
+        {% for year in processed_years %}
+        <label><input class="year-cb" type="checkbox" value="{{ year }}" checked /> {{ year }}</label>
+        {% endfor %}
+      </div>
     </div>
     <button id="btn-load-pivot" type="button">載入橫向表格</button>
   </div>
@@ -49,7 +53,11 @@
     </div>
     <div class="field">
       <span class="field-label">年份（可複選）</span>
-      <div id="table-years" class="year-checks" role="group" aria-label="明細資料年份"></div>
+      <div id="table-years" class="year-checks" role="group" aria-label="明細資料年份">
+        {% for year in processed_years %}
+        <label><input class="year-cb" type="checkbox" value="{{ year }}" checked /> {{ year }}</label>
+        {% endfor %}
+      </div>
     </div>
     <div class="field">
       <label for="table-gender">性別</label>
@@ -90,7 +98,7 @@
   window.VILLAGES = {{ villages | tojson }};
   window.ALL_VILLAGES_LABEL = "澎南區";
 </script>
-<script src="/static/js/common.js"></script>
+<script src="/static/js/common.js?v=2"></script>
 <script src="/static/js/export.js"></script>
-<script src="/static/js/tables.js"></script>
+<script src="/static/js/tables.js?v=2"></script>
 {% endblock %}
