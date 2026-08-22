@@ -67,3 +67,27 @@ def test_process_page_renders_delete_year_options_without_javascript():
     assert '<option value="109">109</option>' in response.text
     assert '<option value="110">110</option>' in response.text
     assert "/static/js/process.js?v=2" in response.text
+
+
+def test_chart_and_table_pages_render_checkbox_year_pickers():
+    with patch("app.main.load_status", return_value={"processed_years": [109, 110]}):
+        indicators_response = _send("GET", "/indicators")
+        tables_response = _send("GET", "/tables")
+
+    assert indicators_response.status_code == 200
+    assert 'id="chart-years" class="year-checks"' in indicators_response.text
+    assert 'id="chart-years" multiple' not in indicators_response.text
+
+    assert tables_response.status_code == 200
+    assert 'id="pivot-years" class="year-checks"' in tables_response.text
+    assert 'id="table-years" class="year-checks"' in tables_response.text
+
+
+def test_table_details_are_collapsed_by_default():
+    with patch("app.main.load_status", return_value={"processed_years": []}):
+        response = _send("GET", "/tables")
+
+    assert response.status_code == 200
+    assert '<details class="card collapsible-card">' in response.text
+    assert '<details class="card collapsible-card" open>' not in response.text
+    assert "<summary><span>明細資料</span></summary>" in response.text

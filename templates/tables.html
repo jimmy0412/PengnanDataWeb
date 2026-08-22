@@ -16,9 +16,9 @@
         {% endfor %}
       </select>
     </div>
-    <div class="field" style="min-width: 180px;">
-      <label for="pivot-years">年份（可多選）</label>
-      <select id="pivot-years" multiple size="5"></select>
+    <div class="field">
+      <span class="field-label">年份（可複選）</span>
+      <div id="pivot-years" class="year-checks" role="group" aria-label="年度指標年份"></div>
     </div>
     <button id="btn-load-pivot" type="button">載入橫向表格</button>
   </div>
@@ -36,8 +36,9 @@
   </div>
 </section>
 
-<section class="card">
-  <h2>明細資料</h2>
+<details class="card collapsible-card">
+  <summary><span>明細資料</span></summary>
+  <div class="collapsible-card-body">
   <div class="row">
     <div class="field">
       <label for="table-type">資料類型</label>
@@ -46,9 +47,9 @@
         <option value="indicators">年度指標</option>
       </select>
     </div>
-    <div class="field" style="min-width: 180px;">
-      <label for="table-years">年份（可多選）</label>
-      <select id="table-years" multiple size="5"></select>
+    <div class="field">
+      <span class="field-label">年份（可複選）</span>
+      <div id="table-years" class="year-checks" role="group" aria-label="明細資料年份"></div>
     </div>
     <div class="field">
       <label for="table-gender">性別</label>
@@ -79,7 +80,8 @@
       <tbody></tbody>
     </table>
   </div>
-</section>
+  </div>
+</details>
 {% endblock %}
 
 {% block scripts %}

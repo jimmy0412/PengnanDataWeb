@@ -167,7 +167,7 @@ function clearLineChart() {
 }
 
 function refreshLineChart() {
-  const years = getMultiYears("chart-years");
+  const years = getCheckedYears("chart-years");
   const villages = selectedVillages();
   const gender = document.getElementById("line-gender").value;
   const metric = selectedLineMetric();
@@ -204,11 +204,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("btn-refresh").addEventListener("click", refreshLineChart);
   document.getElementById("line-gender").addEventListener("change", refreshLineChart);
   document.getElementById("line-metric").addEventListener("change", refreshLineChart);
-  document.getElementById("chart-years").addEventListener("change", refreshLineChart);
+  document.getElementById("chart-years").addEventListener("change", (e) => {
+    if (e.target.classList.contains("year-cb")) refreshLineChart();
+  });
   document.querySelector(".village-checks")?.addEventListener("change", (e) => {
     if (e.target.classList.contains("village-cb")) refreshLineChart();
   });
 
-  const status = await initYearSelectsFromStatus("chart-years", { multiple: true });
+  const status = await initYearCheckboxesFromStatus("chart-years");
   if (status.processed_years?.length) refreshLineChart();
 });

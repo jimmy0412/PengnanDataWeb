@@ -99,7 +99,7 @@ function renderPivotTable(payload) {
 }
 
 async function loadPivotTable() {
-  const years = getMultiYears("pivot-years");
+  const years = getCheckedYears("pivot-years");
   const village = document.getElementById("pivot-village").value;
   const meta = document.getElementById("pivot-meta");
 
@@ -127,7 +127,7 @@ async function loadPivotTable() {
 
 async function loadDetailTable() {
   const type = document.getElementById("table-type").value;
-  const years = getMultiYears("table-years");
+  const years = getCheckedYears("table-years");
   const gender = document.getElementById("table-gender").value;
   const villages = selectedVillages();
   const meta = document.getElementById("table-meta");
@@ -172,10 +172,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("btn-load-table").addEventListener("click", loadDetailTable);
   document.getElementById("pivot-village").addEventListener("change", loadPivotTable);
   document.getElementById("table-type").addEventListener("change", loadDetailTable);
-
-  const status = await initYearSelectsFromStatus(["pivot-years", "table-years"], {
-    multiple: true,
+  document.getElementById("pivot-years").addEventListener("change", (e) => {
+    if (e.target.classList.contains("year-cb")) loadPivotTable();
   });
+  document.getElementById("table-years").addEventListener("change", (e) => {
+    if (e.target.classList.contains("year-cb")) loadDetailTable();
+  });
+
+  const status = await initYearCheckboxesFromStatus(["pivot-years", "table-years"]);
   if (status.processed_years?.length) {
     loadPivotTable();
     loadDetailTable();
