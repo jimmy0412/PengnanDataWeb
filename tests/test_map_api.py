@@ -1,5 +1,6 @@
 import asyncio
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import httpx
@@ -86,6 +87,17 @@ class MapLayerApiTests(unittest.TestCase):
         with patch("app.main.delete_custom_layer", return_value=False):
             response = self.request("DELETE", "/api/map-custom-layers/missing")
         self.assertEqual(response.status_code, 404)
+
+    def test_map_uses_built_in_svg_charts(self):
+        response = self.request("GET", "/map")
+        map_script = Path("static/js/map.js").read_text(encoding="utf-8")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("leaflet.minichart", response.text)
+        self.assertIn("/static/js/map.js?v=2", response.text)
+        self.assertIn("function createBarChartSvg", map_script)
+        self.assertIn("function createPieChartSvg", map_script)
+        self.assertNotIn("L.minichart", map_script)
 
 
 if __name__ == "__main__":

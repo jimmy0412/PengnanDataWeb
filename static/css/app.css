@@ -681,6 +681,25 @@ main:has(.map-editor) {
   background: transparent;
 }
 
+.map-chart-icon {
+  border: 0;
+  background: transparent;
+  filter: drop-shadow(0 1px 1px rgb(15 23 42 / 0.2));
+}
+
+.map-chart-icon svg {
+  display: block;
+  overflow: visible;
+}
+
+.map-chart-icon text {
+  fill: #111827;
+  font: 600 10px/1 sans-serif;
+  paint-order: stroke;
+  stroke: rgb(255 255 255 / 0.9);
+  stroke-width: 2px;
+}
+
 .village-label-icon span {
   position: absolute;
   left: 0;

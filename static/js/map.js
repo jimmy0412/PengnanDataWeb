@@ -167,27 +167,69 @@ function featureCenter(feature) {
 }
 function dataForChart(definition, village) {
   if (definition.source === "population") return [mapData[village]?.總人口?.男 || 0, mapData[village]?.總人口?.女 || 0];
-  return definition.series.map((series) => definition.values?.[village]?.[series] ?? 0);
+  return (definition.series || []).map((series) => definition.values?.[village]?.[series] ?? 0);
+}
+function polarPoint(center, radius, angle) {
+  const radians = (angle - 90) * Math.PI / 180;
+  return [center + radius * Math.cos(radians), center + radius * Math.sin(radians)];
+}
+function pieSlicePath(center, radius, startAngle, endAngle, innerRadius = 0) {
+  const outerStart = polarPoint(center, radius, startAngle), outerEnd = polarPoint(center, radius, endAngle);
+  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+  if (!innerRadius) {
+    return `M ${center} ${center} L ${outerStart[0]} ${outerStart[1]} A ${radius} ${radius} 0 ${largeArc} 1 ${outerEnd[0]} ${outerEnd[1]} Z`;
+  }
+  const innerEnd = polarPoint(center, innerRadius, endAngle), innerStart = polarPoint(center, innerRadius, startAngle);
+  return `M ${outerStart[0]} ${outerStart[1]} A ${radius} ${radius} 0 ${largeArc} 1 ${outerEnd[0]} ${outerEnd[1]} L ${innerEnd[0]} ${innerEnd[1]} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${innerStart[0]} ${innerStart[1]} Z`;
+}
+function createBarChartSvg(data, size) {
+  const padding = size * 0.08, labelHeight = size * 0.24, chartHeight = size - labelHeight - padding;
+  const barGap = size * 0.04, barWidth = Math.max(2, (size - padding * 2 - barGap * (data.length - 1)) / data.length);
+  const maximum = Math.max(...data.map(Math.abs), 1);
+  const bars = data.map((value, index) => {
+    const height = Math.max(1, Math.abs(value) / maximum * chartHeight);
+    const x = padding + index * (barWidth + barGap), y = chartHeight - height;
+    return `<rect x="${x}" y="${y}" width="${barWidth}" height="${height}" rx="${Math.max(1, size * 0.025)}" fill="${CHART_COLORS[index % CHART_COLORS.length]}"><title>${escapeHtml(value)}</title></rect><text x="${x + barWidth / 2}" y="${size - size * 0.04}" text-anchor="middle">${escapeHtml(value)}</text>`;
+  }).join("");
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" aria-hidden="true">${bars}</svg>`;
+}
+function createPieChartSvg(data, size, donut) {
+  const values = data.map((value) => Math.max(0, value)), total = values.reduce((sum, value) => sum + value, 0);
+  const center = size / 2, radius = size * 0.47, innerRadius = donut ? radius * 0.46 : 0;
+  if (values.filter((value) => value > 0).length === 1) {
+    const index = values.findIndex((value) => value > 0);
+    const ring = donut
+      ? `<circle cx="${center}" cy="${center}" r="${(radius + innerRadius) / 2}" fill="none" stroke="${CHART_COLORS[index % CHART_COLORS.length]}" stroke-width="${radius - innerRadius}" />`
+      : `<circle cx="${center}" cy="${center}" r="${radius}" fill="${CHART_COLORS[index % CHART_COLORS.length]}" />`;
+    return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" aria-hidden="true">${ring}<title>${escapeHtml(values[index])}</title></svg>`;
+  }
+  let angle = 0;
+  const slices = values.map((value, index) => {
+    if (!value) return "";
+    const startAngle = angle;
+    angle += value / total * 360;
+    return `<path d="${pieSlicePath(center, radius, startAngle, angle, innerRadius)}" fill="${CHART_COLORS[index % CHART_COLORS.length]}" stroke="#fff" stroke-width="${Math.max(1, size * 0.018)}"><title>${escapeHtml(value)}</title></path>`;
+  }).join("");
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" aria-hidden="true">${slices}</svg>`;
+}
+function createChartIcon(definition, data) {
+  const size = 72 * exportScale;
+  const html = definition.chartType === "bar"
+    ? createBarChartSvg(data, size)
+    : createPieChartSvg(data, size, definition.chartType === "donut");
+  return L.divIcon({ className: "map-chart-icon", html, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
 }
 function createChartLayer(definition) {
   const group = L.layerGroup();
-  if (typeof L.minichart !== "function") return group;
   (geojsonData.features || []).forEach((feature) => {
     const data = dataForChart(definition, villageName(feature)).map((value) => Number(value) || 0), center = featureCenter(feature);
     if (!center || !data.some((value) => value !== 0)) return;
-    const options = {
-      type: definition.chartType === "donut" ? "pie" : definition.chartType,
-      data,
-      colors: CHART_COLORS,
-      width: 72 * exportScale,
-      height: 72 * exportScale,
-      labels: "auto",
-      labelMinSize: 8 * exportScale,
-      labelMaxSize: 24 * exportScale,
+    L.marker(center, {
       pane: definition.id,
-    };
-    if (definition.chartType === "donut") options.innerRadius = 16 * exportScale;
-    L.minichart(center, options).addTo(group);
+      interactive: false,
+      keyboard: false,
+      icon: createChartIcon(definition, data),
+    }).addTo(group);
   });
   return group;
 }
@@ -376,7 +418,6 @@ async function initMap() {
     else appendStatus("尚無已彙整的人口資料；仍可檢視區域底圖、地名與共享圖層。");
   } catch (error) { appendStatus(`人口資料載入失敗：${error.message}；仍可檢視區域底圖。`); }
   try { await loadCustomLayers(); } catch (error) { appendStatus(`共享圖層載入失敗：${error.message}；仍可檢視內建圖層。`); }
-  if (typeof L.minichart !== "function") appendStatus("圖表元件未載入，僅顯示區域與地名圖層。");
   if (typeof L.easyPrint !== "function") appendStatus("PNG 匯出元件未載入。");
   yearSelect.addEventListener("change", async () => { try { await loadMapData(yearSelect.value); refreshLayers(); } catch (error) { appendStatus(error.message); } });
   document.getElementById("custom-layer-upload").addEventListener("submit", uploadCustomLayer);
