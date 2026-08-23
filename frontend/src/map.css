@@ -15,7 +15,6 @@
 .legend-layer > strong { flex: 0 0 auto; }
 .legend-series { display: flex; gap: .3rem .7rem; overflow-x: auto; padding-bottom: .25rem; }
 .map-legend { display: grid; gap: .4rem; max-height: 9rem; overflow: auto; }
-.capture-legend { display: none; }
 .choropleth-legend { position: absolute; z-index: 1000; right: 1.2%; bottom: 1.5%; width: max-content; max-width: 38%; padding: .55rem .45rem .55rem .7rem; border: 1px solid rgb(100 116 139 / .45); border-radius: 6px; background: rgb(255 255 255 / .92); box-shadow: 0 1px 4px rgb(15 23 42 / .2); color: #0f172a; font-size: .76rem; line-height: 1.35; }
 .choropleth-legend > strong { display: block; margin-bottom: .3rem; }
 .choropleth-legend-row { display: flex; align-items: center; gap: .4rem; white-space: nowrap; }
@@ -24,8 +23,6 @@
 .map-background-color { border-color: #78aeba; background: #edf8fa; }
 #map-capture-area .map, #map-capture-area .map-loading { width: 100%; height: 100%; }
 .map-loading { display: grid; place-items: center; background: #e2e8f0; color: #475569; }
-#map-capture-area.map-exporting .capture-legend { display: block; position: absolute; z-index: 1000; left: 1.2%; right: auto; bottom: 1.5%; max-width: 65%; max-height: 22%; overflow: hidden; padding: .55rem .75rem; border-radius: 6px; background: rgb(255 255 255 / .9); font-size: max(12px, .55vw); }
-#map-capture-area.map-exporting .capture-legend .map-legend { max-height: none; overflow: visible; }
 .map-info dl { margin: .5rem 0; max-height: 13rem; overflow: auto; }
 .map-info dl > div { display: grid; grid-template-columns: 1fr auto; gap: 1rem; padding: .15rem 0; }
 .map-info dt i { display: inline-block; width: .75rem; height: .75rem; margin-right: .35rem; border-radius: 2px; }
