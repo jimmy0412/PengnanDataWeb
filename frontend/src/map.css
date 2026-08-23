@@ -4,6 +4,8 @@
 .react-map-editor .map-layer-status { color: #9a3412; font-size: .86rem; }
 .react-chart-icon { border: 0; background: transparent; filter: drop-shadow(0 1px 1px rgb(15 23 42 / .3)); }
 .react-chart-icon svg { width: 100%; height: 100%; overflow: visible; }
+.chart-value-label { fill: #111827; stroke: rgb(255 255 255 / .95); stroke-width: 2.5px; paint-order: stroke fill; font-size: 8px; font-weight: 700; font-variant-numeric: tabular-nums; pointer-events: none; }
+.chart-slice-label { fill: #0f172a; font-size: 8px; }
 .react-chart-icon.selected { filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 4px #111827); }
 .map-no-data { display: grid; place-items: center; width: 100%; height: 100%; border: 1px dashed #475569; border-radius: 50%; background: rgb(255 255 255 / .85); color: #334155; font-size: 9px; }
 .react-village-label { width: 0 !important; height: 0 !important; border: 0; background: transparent; }
@@ -14,11 +16,15 @@
 .legend-series { display: flex; gap: .3rem .7rem; overflow-x: auto; padding-bottom: .25rem; }
 .map-legend { display: grid; gap: .4rem; max-height: 9rem; overflow: auto; }
 .capture-legend { display: none; }
+.choropleth-legend { position: absolute; z-index: 1000; right: 1.2%; bottom: 1.5%; min-width: 10rem; max-width: 38%; padding: .55rem .7rem; border: 1px solid rgb(100 116 139 / .45); border-radius: 6px; background: rgb(255 255 255 / .92); box-shadow: 0 1px 4px rgb(15 23 42 / .2); color: #0f172a; font-size: .76rem; line-height: 1.35; }
+.choropleth-legend > strong { display: block; margin-bottom: .3rem; }
+.choropleth-legend-row { display: flex; align-items: center; gap: .4rem; white-space: nowrap; }
+.choropleth-legend-row i { width: 1.35rem; height: .72rem; border: 1px solid rgb(51 65 85 / .35); }
 #map-capture-area { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #aad3df; }
 .map-background-color { border-color: #78aeba; background: #edf8fa; }
 #map-capture-area .map, #map-capture-area .map-loading { width: 100%; height: 100%; }
 .map-loading { display: grid; place-items: center; background: #e2e8f0; color: #475569; }
-#map-capture-area.map-exporting .capture-legend { display: block; position: absolute; z-index: 1000; left: 1.2%; right: 1.2%; bottom: 1.5%; max-height: 22%; overflow: hidden; padding: .55rem .75rem; border-radius: 6px; background: rgb(255 255 255 / .9); font-size: max(12px, .55vw); }
+#map-capture-area.map-exporting .capture-legend { display: block; position: absolute; z-index: 1000; left: 1.2%; right: auto; bottom: 1.5%; max-width: 65%; max-height: 22%; overflow: hidden; padding: .55rem .75rem; border-radius: 6px; background: rgb(255 255 255 / .9); font-size: max(12px, .55vw); }
 #map-capture-area.map-exporting .capture-legend .map-legend { max-height: none; overflow: visible; }
 .map-info dl { margin: .5rem 0; max-height: 13rem; overflow: auto; }
 .map-info dl > div { display: grid; grid-template-columns: 1fr auto; gap: 1rem; padding: .15rem 0; }

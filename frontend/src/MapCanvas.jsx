@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import L from "leaflet";
 import { GeoJSON, MapContainer, Marker, Pane, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import { chartHtml } from "./charts";
 import { featureInteriorPoint, villageKey, villageName } from "./geo";
-import { chartSize } from "./visualization";
+import { chartSize, choroplethScale, formatMapNumber, NO_DATA_COLOR } from "./visualization";
 
 function MapLifecycle({ geojson, onMap, onZoom }) {
   const map = useMap();
@@ -13,6 +13,27 @@ function MapLifecycle({ geojson, onMap, onZoom }) {
 }
 function Boundary({ layer, geojson, colors, selected, onSelect }) {
   return <Pane name={layer.id} style={{ zIndex: layer.zIndex }}><GeoJSON key={`${JSON.stringify(colors)}-${selected?.village || ""}`} data={geojson} style={(feature) => ({ color: selected?.village === villageName(feature) ? "#111827" : "#374151", weight: selected?.village === villageName(feature) ? 4 : 1.5, fillColor: colors[villageKey(feature)] || "#1f77b4", fillOpacity: 1 })} onEachFeature={(feature, item) => item.on({ click: () => onSelect({ village: villageName(feature), layerId: "population" }) })}/></Pane>;
+}
+function Choropleth({ layer, geojson, selected, onSelect }) {
+  const itemRef = useRef(null), scale = choroplethScale(layer), series = layer.series[0], patternId = `no-data-${layer.id.replace(/[^A-Za-z0-9_-]/g, "")}`;
+  useEffect(() => {
+    const path = itemRef.current?.getLayers?.()[0]?._path, svg = path?.ownerSVGElement;
+    if (!svg || svg.querySelector(`#${patternId}`)) return;
+    const ns = "http://www.w3.org/2000/svg", defs = document.createElementNS(ns, "defs"), pattern = document.createElementNS(ns, "pattern"), background = document.createElementNS(ns, "rect"), stripe = document.createElementNS(ns, "path");
+    pattern.setAttribute("id", patternId); pattern.setAttribute("width", "8"); pattern.setAttribute("height", "8"); pattern.setAttribute("patternUnits", "userSpaceOnUse");
+    background.setAttribute("width", "8"); background.setAttribute("height", "8"); background.setAttribute("fill", NO_DATA_COLOR);
+    stripe.setAttribute("d", "M-2,2 L2,-2 M0,8 L8,0 M6,10 L10,6"); stripe.setAttribute("stroke", "#94a3b8"); stripe.setAttribute("stroke-width", "2");
+    pattern.append(background, stripe); defs.append(pattern); svg.prepend(defs);
+  }, [patternId, geojson]);
+  return <Pane name={layer.id} style={{ zIndex: layer.zIndex }}><GeoJSON ref={itemRef} key={`${layer.id}-${JSON.stringify(layer.values)}-${selected?.village || ""}`} data={geojson} style={(feature) => {
+    const village = villageName(feature), value = layer.values?.[village]?.[series.id], hasValue = Number.isFinite(Number(value)), active = selected?.village === village && selected?.layerId === layer.id;
+    return { color: active ? "#111827" : "#334155", weight: active ? 4 : 1.5, fillColor: hasValue ? scale.color(value) : `url(#${patternId})`, fillOpacity: .8 };
+  }} onEachFeature={(feature, shape) => {
+    const village = villageName(feature), value = layer.values?.[village]?.[series.id], text = Number.isFinite(Number(value)) ? `${formatMapNumber(value)}${layer.source?.unit || ""}` : "無資料";
+    const tooltip = document.createElement("div"), heading = document.createElement("strong"), detail = document.createElement("span");
+    heading.textContent = `${village} · ${layer.name}`; detail.className = "map-tooltip-row"; detail.textContent = `${series.name}：${text}`; tooltip.append(heading, detail); shape.bindTooltip(tooltip);
+    shape.on({ click: () => onSelect({ village, layerId: layer.id }) });
+  }}/></Pane>;
 }
 function Charts({ layer, geojson, zoom, selected, onSelect }) {
   return <Pane name={layer.id} style={{ zIndex: layer.zIndex }}>{geojson.features.map((feature) => {
@@ -37,6 +58,7 @@ export default function MapCanvas({ geojson, layers, colors, backgroundColor, la
     {layers.filter((layer) => layer.visible).map((layer, index) => {
       const item = { ...layer, zIndex: 400 + index * 20 };
       if (item.kind === "boundary") return <Boundary key={item.id} layer={item} geojson={geojson} colors={colors} selected={selected} onSelect={onSelect}/>;
+      if (item.kind === "choropleth") return <Choropleth key={item.id} layer={item} geojson={geojson} selected={selected} onSelect={onSelect}/>;
       if (item.kind === "labels") return <Labels key={item.id} layer={item} geojson={geojson} positions={labelPositions} onMove={onLabelMove}/>;
       return <Charts key={`${item.id}-${JSON.stringify(item.values)}`} layer={item} geojson={geojson} zoom={zoom} selected={selected} onSelect={onSelect}/>;
     })}

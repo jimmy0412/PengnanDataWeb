@@ -64,7 +64,7 @@ class ProcessRequest(BaseModel):
 
 class MapLayerFromDataRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    chart_type: Literal["bar", "pie", "donut"]
+    chart_type: Literal["bar", "pie", "donut", "choropleth"]
     year: int
     data_type: Literal["indicators", "age"]
     gender: Literal["全部", "男", "女"]

@@ -4,10 +4,10 @@ import { api } from "./api";
 import { villageKey, villageName } from "./geo";
 import { initialState, reducer } from "./store";
 import { loadWorkspace, saveWorkspace } from "./storage";
-import { DEFAULT_MAP_BACKGROUND_COLOR, DEFAULT_SERIES_COLORS, DEFAULT_VILLAGE_COLORS } from "./visualization";
+import { DEFAULT_MAP_BACKGROUND_COLOR, DEFAULT_SERIES_COLORS, DEFAULT_VILLAGE_COLORS, topVisibleChoropleth } from "./visualization";
 import MapCanvas from "./MapCanvas";
 import LayerPanel from "./LayerPanel";
-import Legend from "./Legend";
+import Legend, { ChoroplethLegend } from "./Legend";
 import { CreateForms } from "./Forms";
 
 const builtIns = [
@@ -62,14 +62,14 @@ export default function App({ config }) {
     } catch (error) { dispatch({ type: "status", message: `PNG 匯出失敗：${error.message}` }); dispatch({ type: "export", active: true, error: error.message }); }
     finally { node.classList.remove("map-exporting"); node.style.width = original.width; node.style.height = original.height; map.invalidateSize(false); map.setView(original.center, original.zoom, { animate: false }); dispatch({ type: "select", value: original.selected }); dispatch({ type: "export", active: false }); }
   };
-  const activeCharts = useMemo(() => state.layers.filter((layer) => layer.kind === "chart"), [state.layers]);
+  const activeChoropleth = useMemo(() => topVisibleChoropleth(state.layers), [state.layers]);
   return <div className="map-editor react-map-editor">
-    <section className="card map-canvas-panel" aria-labelledby="map-heading"><h2 id="map-heading">澎南區地圖</h2><div id="map-capture-area" ref={captureRef} style={{ backgroundColor: state.mapBackgroundColor }}><MapCanvas geojson={geojson} layers={state.layers} colors={state.villageColors} backgroundColor={state.mapBackgroundColor} labelPositions={state.labelPositions} selected={state.selected} onSelect={(value) => dispatch({ type: "select", value })} onLabelMove={(id, position) => dispatch({ type: "label", id, position })} onMap={setMap} zoom={zoom} onZoom={setZoom}/><div className="capture-legend"><Legend layers={state.layers}/></div></div><Legend layers={state.layers}/>
+    <section className="card map-canvas-panel" aria-labelledby="map-heading"><h2 id="map-heading">澎南區地圖</h2><div id="map-capture-area" ref={captureRef} style={{ backgroundColor: state.mapBackgroundColor }}><MapCanvas geojson={geojson} layers={state.layers} colors={state.villageColors} backgroundColor={state.mapBackgroundColor} labelPositions={state.labelPositions} selected={state.selected} onSelect={(value) => dispatch({ type: "select", value })} onLabelMove={(id, position) => dispatch({ type: "label", id, position })} onMap={setMap} zoom={zoom} onZoom={setZoom}/><ChoroplethLegend layer={activeChoropleth}/><div className="capture-legend"><Legend layers={state.layers}/></div></div><Legend layers={state.layers}/>
       <div className="map-info"><strong>選取資訊</strong>{state.selected && selectedLayer ? <div><div><strong>{state.selected.village}</strong> · {selectedLayer.name}</div><dl>{selectedLayer.series?.map((series) => <div key={series.id}><dt><i style={{ background: series.color }}/>{series.name}</dt><dd>{selectedValues?.[series.id] ?? "—"}{selectedLayer.source?.unit || ""}</dd></div>)}</dl><p className="hint">來源：{selectedLayer.source?.type === "processed_data" ? `${selectedLayer.source.year || state.year || "—"} 年／${selectedLayer.source.data_type || "人口資料"}／${selectedLayer.source.gender || "全部"}` : "CSV 上傳"}</p></div> : <p className="hint">選取地圖上的圖表或區域以查看完整資料。</p>}</div>
     </section>
     <aside className="map-workspace" aria-label="地圖工作區">
       <details className="card map-workspace-section" open><summary>圖層工作區</summary><div className="map-workspace-section-body"><p className="hint">清單最上方為地圖最上層；可拖曳或使用上下按鈕排序。</p><label className="field">內建資料年份<select value={state.year || ""} onChange={(event) => dispatch({ type: "year", year: event.target.value })}>{years.map((year) => <option key={year}>{year}</option>)}</select></label><LayerPanel layers={state.layers} dispatch={dispatch} onDelete={deleteLayer}/><div className="map-layer-status" role="status">{state.status.join(" ")}</div></div></details>
-      <details className="card map-workspace-section" open><summary>新增共享圖表圖層</summary><div className="map-workspace-section-body"><CreateForms years={years} api={api} refresh={() => loadLayers()}/></div></details>
+      <details className="card map-workspace-section" open><summary>新增共享資料圖層</summary><div className="map-workspace-section-body"><CreateForms years={years} api={api} refresh={() => loadLayers()}/></div></details>
       <details className="card map-workspace-section" open><summary>區域色彩設定</summary><div className="map-workspace-section-body"><button className="secondary" onClick={resetColors}>重設預設色彩</button><div className="color-grid map-color-grid"><label className="map-color-item map-background-color"><span>地圖背景（海域）</span><input type="color" value={state.mapBackgroundColor} aria-label="地圖背景顏色" onChange={(event) => dispatch({ type: "backgroundColor", color: event.target.value })}/></label>{(geojson?.features || []).map((feature) => <label className="map-color-item" key={villageKey(feature)}><span>{villageName(feature)}</span><input type="color" value={state.villageColors[villageKey(feature)] || "#1f77b4"} onChange={(event) => dispatch({ type: "color", id: villageKey(feature), color: event.target.value })}/></label>)}</div></div></details>
       <details className="card map-workspace-section" open><summary>PNG 匯出設定</summary><div className="map-workspace-section-body"><div className="export-toolbar"><label>寬度 (px)<input type="number" min="800" step="160" value={width} onChange={(event) => setWidth(Math.max(800, Number(event.target.value) || 2560))}/></label><span>高度：{Math.round(width * 9 / 16)} px（16:9）</span><button className="secondary" disabled={state.export.active} onClick={exportPng}>{state.export.active ? "匯出中…" : "下載 PNG"}</button></div></div></details>
     </aside>

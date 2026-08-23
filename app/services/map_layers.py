@@ -9,11 +9,12 @@ from uuid import uuid4
 from app.config import AGE_GROUPS, MAP_LAYERS_CATALOG_FILE, MAP_LAYERS_DIR, TARGET_VILLAGES
 from app.services.query_data import query_age_structure, query_indicators
 
-CHART_TYPES = {"bar", "pie", "donut"}
+CHART_TYPES = {"bar", "pie", "donut", "choropleth"}
 DATA_TYPES = {"indicators", "age"}
 GENDERS = {"全部", "男", "女"}
 INDICATOR_METRICS = {"總人口", "扶老比", "出生率", "自然增加率", "年出生", "年死亡"}
 SERIES_COLORS = ["#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#F0E442", "#6F4E7C", "#8C564B", "#2F4B7C", "#A05195", "#665191", "#FF7C43", "#1B998B", "#B56576", "#4C78A8", "#F58518", "#54A24B", "#E45756", "#72B7B2"]
+CHOROPLETH_COLORS = ["#ffffb2", "#fecc5c", "#fd8d3c", "#f03b20", "#bd0026"]
 _LOCK = threading.RLock()
 
 class MapLayerValidationError(ValueError): pass
@@ -29,7 +30,7 @@ def _validate_definition(name, chart_type):
     name = name.strip()
     if not name: raise MapLayerValidationError("請提供圖層名稱")
     if len(name) > 100: raise MapLayerValidationError("圖層名稱不可超過 100 個字元")
-    if chart_type not in CHART_TYPES: raise MapLayerValidationError("圖表類型必須為 bar、pie 或 donut")
+    if chart_type not in CHART_TYPES: raise MapLayerValidationError("圖層類型必須為 bar、pie、donut 或 choropleth")
     return name
 
 def _validate_names(names):
@@ -41,6 +42,7 @@ def _validate_names(names):
 
 def _build_layer(name, chart_type, names, values, *, source, layer_id=None, created_at=None):
     name, names = _validate_definition(name, chart_type), _validate_names(names)
+    if chart_type == "choropleth" and len(names) != 1: raise MapLayerValidationError("面量圖只能包含一個數值系列")
     series = [{"id": _series_id(label, i), "name": label, "color": SERIES_COLORS[i % len(SERIES_COLORS)]} for i, label in enumerate(names)]
     ids = {item["name"]: item["id"] for item in series}
     normalized = {}
@@ -53,17 +55,25 @@ def _build_layer(name, chart_type, names, values, *, source, layer_id=None, crea
             if not math.isfinite(number): raise MapLayerValidationError(f"{village} 的「{label}」必須為有限數值")
             if chart_type in {"pie", "donut"} and number < 0: raise MapLayerValidationError("圓餅圖與甜甜圈圖不可包含負值")
             normalized[village][ids[label]] = number
-    return {"id": layer_id or uuid4().hex, "name": name, "kind": "chart", "created_at": created_at or _now(), "visualization": {"type": chart_type, "scale": "global"}, "series": series, "values": normalized, "source": source}
+    visualization = ({"type": "choropleth", "scale": "equal_interval", "classes": 5, "palette": CHOROPLETH_COLORS}
+                     if chart_type == "choropleth" else {"type": chart_type, "scale": "global"})
+    return {"id": layer_id or uuid4().hex, "name": name, "kind": "choropleth" if chart_type == "choropleth" else "chart", "created_at": created_at or _now(), "visualization": visualization, "series": series, "values": normalized, "source": source}
 
 def _validate_layer(layer):
     required = {"id", "name", "kind", "created_at", "visualization", "series", "values", "source"}
     if not isinstance(layer, dict) or not required <= set(layer): raise MapLayerValidationError("catalog 圖層缺少必要欄位")
     if not isinstance(layer["id"], str) or not layer["id"].strip(): raise MapLayerValidationError("圖層 id 無效")
     if not isinstance(layer["name"], str) or not isinstance(layer["created_at"], str) or not layer["created_at"].strip(): raise MapLayerValidationError("圖層名稱或建立時間無效")
-    if layer["kind"] != "chart" or not isinstance(layer["source"], dict): raise MapLayerValidationError("圖層種類或來源格式無效")
+    if layer["kind"] not in {"chart", "choropleth"} or not isinstance(layer["source"], dict): raise MapLayerValidationError("圖層種類或來源格式無效")
     visual = layer["visualization"]
-    if not isinstance(visual, dict) or visual.get("scale") != "global": raise MapLayerValidationError("圖層尺度必須為 global")
+    if not isinstance(visual, dict): raise MapLayerValidationError("圖層視覺化格式無效")
     chart_type = visual.get("type"); _validate_definition(str(layer["name"]), chart_type)
+    if chart_type == "choropleth":
+        if layer["kind"] != "choropleth" or visual.get("scale") != "equal_interval" or visual.get("classes") != 5: raise MapLayerValidationError("面量圖必須使用 5 級等距尺度")
+        palette = visual.get("palette")
+        if not isinstance(palette, list) or len(palette) != 5 or any(not isinstance(color, str) or not re.fullmatch(r"#[0-9A-Fa-f]{6}", color) for color in palette): raise MapLayerValidationError("面量圖色盤格式無效")
+    elif layer["kind"] != "chart" or visual.get("scale") != "global":
+        raise MapLayerValidationError("圖表圖層尺度必須為 global")
     if not isinstance(layer["series"], list) or not layer["series"]: raise MapLayerValidationError("圖層至少需要一個系列")
     ids = set()
     for item in layer["series"]:
@@ -71,6 +81,7 @@ def _validate_layer(layer):
         if item["id"] in ids: raise MapLayerValidationError("系列 id 不可重複")
         if not re.fullmatch(r"#[0-9A-Fa-f]{6}", item["color"]): raise MapLayerValidationError("系列色彩格式無效")
         ids.add(item["id"])
+    if chart_type == "choropleth" and len(ids) != 1: raise MapLayerValidationError("面量圖只能包含一個數值系列")
     if not isinstance(layer["values"], dict): raise MapLayerValidationError("圖層數值格式無效")
     for village, row in layer["values"].items():
         if village not in TARGET_VILLAGES or not isinstance(row, dict) or set(row) != ids: raise MapLayerValidationError("里別或系列數值不完整")
@@ -142,7 +153,9 @@ def _parse_csv(name, chart_type, content):
         reader = csv.DictReader(io.StringIO(text)); headers = reader.fieldnames or []
         if "里" not in headers: raise MapLayerValidationError("CSV 必須包含「里」欄位")
         if any(not h or not h.strip() for h in headers) or len(set(headers)) != len(headers): raise MapLayerValidationError("CSV 欄位名稱不可空白或重複")
-        series = _validate_names([h for h in headers if h != "里"]); values = {}
+        series = _validate_names([h for h in headers if h != "里"])
+        if chart_type == "choropleth" and len(series) != 1: raise MapLayerValidationError("面量圖 CSV 必須只有「里」及一個數值欄位")
+        values = {}
         for line, row in enumerate(reader, 2):
             village = (row.get("里") or "").strip()
             if not village: raise MapLayerValidationError(f"第 {line} 列缺少里名")
@@ -188,7 +201,9 @@ def _processed_values(year, data_type, gender, metric):
     return series, values
 
 def create_map_layer_from_data_v2(name, chart_type, year, data_type, gender, metric=None):
-    name = _validate_definition(name, chart_type); series, values = _processed_values(year, data_type, gender, metric)
+    name = _validate_definition(name, chart_type)
+    if chart_type == "choropleth" and data_type != "indicators": raise MapLayerValidationError("面量圖只能使用年度指標資料")
+    series, values = _processed_values(year, data_type, gender, metric)
     units = {"扶老比": "%", "出生率": "‰", "自然增加率": "‰", "總人口": "人", "年出生": "人", "年死亡": "人"}
     source = {"type": "processed_data", "year": year, "data_type": data_type, "gender": gender, "metric": metric if data_type == "indicators" else None, "unit": units.get(metric, "人")}
     return _persist(_build_layer(name, chart_type, series, values, source=source))
