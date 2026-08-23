@@ -1,4 +1,7 @@
+import { DEFAULT_GENDER_COLORS } from "./visualization";
+
 export const STORAGE_KEY = "pengnan.map.v3";
+export const GENDER_COLOR_KEY = "penghu_population_colors";
 const COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 const OLD_KEYS = { workspace: "pengnan_map_workspace_v2", colors: "pengnan_map_colors", labels: "pengnan_map_label_positions_v1" };
 function read(storage, key, fallback) { try { return JSON.parse(storage.getItem(key)) ?? fallback; } catch { return fallback; } }
@@ -16,3 +19,11 @@ export function loadWorkspace(storage, layerIds = [], villageIds = []) {
   return { layers, villageColors, mapBackgroundColor, labelPositions };
 }
 export function saveWorkspace(storage, state) { storage.setItem(STORAGE_KEY, JSON.stringify({ layers: state.layers.map(({ id, visible }) => ({ id, visible })), villageColors: state.villageColors, mapBackgroundColor: state.mapBackgroundColor, labelPositions: state.labelPositions })); }
+
+export function loadGenderColors(storage) {
+  const saved = read(storage, GENDER_COLOR_KEY, {});
+  return {
+    male: COLOR_PATTERN.test(saved?.male || "") ? saved.male : DEFAULT_GENDER_COLORS.male,
+    female: COLOR_PATTERN.test(saved?.female || "") ? saved.female : DEFAULT_GENDER_COLORS.female,
+  };
+}

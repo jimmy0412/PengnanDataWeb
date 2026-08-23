@@ -10,6 +10,7 @@ export function reducer(state, action) {
     case "toggle": return { ...state, layers: state.layers.map((layer) => layer.id === action.id ? { ...layer, visible: !layer.visible } : layer) };
     case "move": { const layers = [...state.layers], from = layers.findIndex((layer) => layer.id === action.id), to = Math.max(0, Math.min(layers.length - 1, from + action.delta)); if (from < 0 || from === to) return state; layers.splice(to, 0, layers.splice(from, 1)[0]); return { ...state, layers }; }
     case "layers": return { ...state, layers: action.layers };
+    case "populationValues": return { ...state, layers: state.layers.map((layer) => layer.id === "population" ? { ...layer, values: action.values } : layer) };
     case "color": return { ...state, villageColors: { ...state.villageColors, [action.id]: action.color } };
     case "backgroundColor": return { ...state, mapBackgroundColor: action.color };
     case "label": return { ...state, labelPositions: { ...state.labelPositions, [action.id]: action.position } };

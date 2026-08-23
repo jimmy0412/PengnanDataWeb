@@ -14,4 +14,11 @@ describe("map reducer", () => {
     expect(updated.mapBackgroundColor).toBe("#abcdef");
     expect(updated.villageColors).toEqual({});
   });
+  it("updates population values without replacing concurrently loaded layers", () => {
+    const state = { ...initialState, layers: [{ id: "population", values: {} }, { id: "new-layer", values: { A: { x: 1 } } }] };
+    const values = { A: { male: 10, female: 11 } };
+    const updated = reducer(state, { type: "populationValues", values });
+    expect(updated.layers[0].values).toBe(values);
+    expect(updated.layers[1]).toBe(state.layers[1]);
+  });
 });

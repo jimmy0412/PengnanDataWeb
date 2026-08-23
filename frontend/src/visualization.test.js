@@ -25,6 +25,7 @@ describe("choropleth scales", () => {
     expect(scale.ranges).toHaveLength(5);
     expect(scale.ranges[0]).toMatchObject({ minimum: -10, maximum: -6, color: "#1" });
     expect(scale.ranges[4]).toMatchObject({ minimum: 6, maximum: 10, color: "#5" });
+    expect(scale.ranges.map((range) => range.label)).toEqual(["-10--6", "-6--2", "-2-2", "2-6", "6-10"]);
     expect(scale.color(-10)).toBe("#1");
     expect(scale.color(10)).toBe("#5");
     expect(scale.color(undefined)).toBe(NO_DATA_COLOR);

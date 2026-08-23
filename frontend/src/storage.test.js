@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadWorkspace, STORAGE_KEY } from "./storage";
+import { GENDER_COLOR_KEY, loadGenderColors, loadWorkspace, STORAGE_KEY } from "./storage";
 
 describe("localStorage migration", () => {
   it("migrates once and ignores missing, duplicate, and malformed values", () => {
@@ -19,5 +19,16 @@ describe("localStorage migration", () => {
     expect(loadWorkspace(localStorage).mapBackgroundColor).toBe("#8ccbd8");
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ mapBackgroundColor: "gray" }));
     expect(loadWorkspace(localStorage).mapBackgroundColor).toBeNull();
+  });
+  it("shares valid population gender colors and falls back per field", () => {
+    localStorage.clear();
+    localStorage.setItem(GENDER_COLOR_KEY, JSON.stringify({ male: "#123456", female: "#abcdef" }));
+    expect(loadGenderColors(localStorage)).toEqual({ male: "#123456", female: "#abcdef" });
+
+    localStorage.setItem(GENDER_COLOR_KEY, JSON.stringify({ male: "invalid", female: "#fedcba" }));
+    expect(loadGenderColors(localStorage)).toEqual({ male: "#3b82f6", female: "#fedcba" });
+
+    localStorage.setItem(GENDER_COLOR_KEY, "not-json");
+    expect(loadGenderColors(localStorage)).toEqual({ male: "#3b82f6", female: "#ec4899" });
   });
 });

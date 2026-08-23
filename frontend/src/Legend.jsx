@@ -8,6 +8,7 @@ export default function Legend({ layers }) {
 
 export function ChoroplethLegend({ layer }) {
   if (!layer) return null;
-  const scale = choroplethScale(layer), unit = layer.source?.unit || "";
-  return <aside className="choropleth-legend" aria-label={`${layer.name} 面量圖圖例`}><strong>{layer.name}</strong><div>{scale.ranges.map((range) => <span className="choropleth-legend-row" key={`${range.minimum}-${range.maximum}`}><i style={{ background: range.color }}/><span>{range.label}{unit}</span></span>)}</div></aside>;
+  const scale = choroplethScale(layer), metric = layer.source?.metric || layer.series?.[0]?.name || layer.name, unit = layer.source?.unit;
+  const title = unit ? `${metric}（${unit}）` : metric;
+  return <aside className="choropleth-legend" aria-label={`${title} 面量圖圖例`}><strong>{title}</strong><div>{scale.ranges.map((range) => <span className="choropleth-legend-row" key={`${range.minimum}-${range.maximum}`}><i style={{ background: range.color }}/><span>{range.label}</span></span>)}</div></aside>;
 }

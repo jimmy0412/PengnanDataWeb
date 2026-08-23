@@ -16,7 +16,7 @@
 .legend-series { display: flex; gap: .3rem .7rem; overflow-x: auto; padding-bottom: .25rem; }
 .map-legend { display: grid; gap: .4rem; max-height: 9rem; overflow: auto; }
 .capture-legend { display: none; }
-.choropleth-legend { position: absolute; z-index: 1000; right: 1.2%; bottom: 1.5%; min-width: 10rem; max-width: 38%; padding: .55rem .7rem; border: 1px solid rgb(100 116 139 / .45); border-radius: 6px; background: rgb(255 255 255 / .92); box-shadow: 0 1px 4px rgb(15 23 42 / .2); color: #0f172a; font-size: .76rem; line-height: 1.35; }
+.choropleth-legend { position: absolute; z-index: 1000; right: 1.2%; bottom: 1.5%; width: max-content; max-width: 38%; padding: .55rem .45rem .55rem .7rem; border: 1px solid rgb(100 116 139 / .45); border-radius: 6px; background: rgb(255 255 255 / .92); box-shadow: 0 1px 4px rgb(15 23 42 / .2); color: #0f172a; font-size: .76rem; line-height: 1.35; }
 .choropleth-legend > strong { display: block; margin-bottom: .3rem; }
 .choropleth-legend-row { display: flex; align-items: center; gap: .4rem; white-space: nowrap; }
 .choropleth-legend-row i { width: 1.35rem; height: .72rem; border: 1px solid rgb(51 65 85 / .35); }

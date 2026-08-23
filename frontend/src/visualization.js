@@ -2,6 +2,7 @@ import { scaleLinear } from "d3-scale";
 
 export const DEFAULT_VILLAGE_COLORS = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2"];
 export const DEFAULT_SERIES_COLORS = ["#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#F0E442"];
+export const DEFAULT_GENDER_COLORS = { male: "#3b82f6", female: "#ec4899" };
 export const DEFAULT_MAP_BACKGROUND_COLOR = "#aad3df";
 export const DEFAULT_CHOROPLETH_COLORS = ["#ffffb2", "#fecc5c", "#fd8d3c", "#f03b20", "#bd0026"];
 const LEGACY_CHOROPLETH_COLORS = ["#eff3ff", "#bdd7e7", "#6baed6", "#3182bd", "#08519c"];
@@ -50,7 +51,7 @@ export function choroplethScale(layer) {
   const count = layer.visualization?.classes || 5, step = (maximum - minimum) / count;
   const ranges = Array.from({ length: count }, (_, index) => {
     const lower = minimum + step * index, upper = index === count - 1 ? maximum : minimum + step * (index + 1);
-    return { minimum: lower, maximum: upper, color: palette[index], label: index === count - 1 ? `${formatMapNumber(lower)} ≤ x ≤ ${formatMapNumber(upper)}` : `${formatMapNumber(lower)} ≤ x < ${formatMapNumber(upper)}` };
+    return { minimum: lower, maximum: upper, color: palette[index], label: `${formatMapNumber(lower)}-${formatMapNumber(upper)}` };
   });
   return { ranges, color: (value) => {
     const number = Number(value);
