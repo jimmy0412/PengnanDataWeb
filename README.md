@@ -6,6 +6,7 @@
 
 - Python 3.10+
 - 可連線至 `penghu.gov.tw`（下載原始檔時）
+- Node.js 20+（只在修改、建置或測試 React 地圖時需要）
 
 ## 安裝
 
@@ -22,6 +23,16 @@ PYTHONPATH=. uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 瀏覽器開啟：http://127.0.0.1:8000
+
+`/map` 的正式 bundle 已放在 `static/dist`，因此正式執行 FastAPI 不需要 Node.js。修改地圖前端時使用：
+
+```bash
+npm install
+npm run dev       # Vite 開發伺服器
+npm run build     # 輸出 static/dist
+npm run watch     # 持續建置
+npm test          # Vitest 與 React Testing Library
+```
 
 ## 頁面說明
 
@@ -108,6 +119,12 @@ templates/        網頁模板
 | POST | `/api/map-custom-layers` | 上傳共享 CSV 地圖圖層（multipart：`name`、`chart_type`、`file`） |
 | POST | `/api/map-custom-layers/from-data` | 從已彙整的年度指標或年齡結構建立共享圖層快照 |
 | DELETE | `/api/map-custom-layers/{layer_id}` | 永久刪除共享圖層及其 CSV 來源檔 |
+| GET | `/api/v2/map-layers` | 讀取 schema version 2 的共享圖層 catalog |
+| POST | `/api/v2/map-layers` | 上傳 V2 共享 CSV 圖層 |
+| POST | `/api/v2/map-layers/from-data` | 從既有資料建立 V2 圖層快照 |
+| DELETE | `/api/v2/map-layers/{layer_id}` | 刪除 V2 共享圖層 |
+
+V1 地圖端點目前保留作相容層。V1 與 V2 共同讀寫 V2 catalog；首次由 V2 讀取舊 list catalog 時，系統會先在同目錄建立帶時間戳的備份，再以原子替換完成遷移。
 
 ## 離線測試（不下載）
 

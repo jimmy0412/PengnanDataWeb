@@ -35,7 +35,10 @@ from app.services.map_layers import (
     MapLayerValidationError,
     create_custom_layer,
     create_custom_layer_from_data,
+    create_map_layer_from_data_v2,
+    create_map_layer_v2,
     delete_custom_layer,
+    load_catalog_v2,
     load_custom_layers,
 )
 from app.services.jobs import create_job, get_job, submit_job
@@ -261,6 +264,48 @@ async def api_create_map_custom_layer_from_data(body: MapLayerFromDataRequest):
 
 @app.delete("/api/map-custom-layers/{layer_id}", status_code=204)
 async def api_delete_map_custom_layer(layer_id: str):
+    if not delete_custom_layer(layer_id):
+        raise HTTPException(status_code=404, detail="找不到指定的共享圖層")
+    return Response(status_code=204)
+
+
+@app.get("/api/v2/map-layers")
+async def api_v2_map_layers():
+    try:
+        return load_catalog_v2()
+    except MapLayerValidationError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/api/v2/map-layers", status_code=201)
+async def api_v2_create_map_layer(
+    name: str = Form(...),
+    chart_type: str = Form(...),
+    file: UploadFile = File(...),
+):
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="請上傳 .csv 檔案")
+    try:
+        return {"layer": create_map_layer_v2(name, chart_type, await file.read())}
+    except MapLayerValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/v2/map-layers/from-data", status_code=201)
+async def api_v2_create_map_layer_from_data(body: MapLayerFromDataRequest):
+    try:
+        layer = create_map_layer_from_data_v2(
+            body.name, body.chart_type, body.year, body.data_type, body.gender, body.metric
+        )
+    except MapLayerValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except MapLayerDataNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {"layer": layer}
+
+
+@app.delete("/api/v2/map-layers/{layer_id}", status_code=204)
+async def api_v2_delete_map_layer(layer_id: str):
     if not delete_custom_layer(layer_id):
         raise HTTPException(status_code=404, detail="找不到指定的共享圖層")
     return Response(status_code=204)

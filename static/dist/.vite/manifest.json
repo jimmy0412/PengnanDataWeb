@@ -1,0 +1,11 @@
+{
+  "src/main.jsx": {
+    "file": "map-app.js",
+    "name": "main",
+    "src": "src/main.jsx",
+    "isEntry": true,
+    "css": [
+      "map-app.css"
+    ]
+  }
+}
