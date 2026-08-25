@@ -21,4 +21,13 @@ describe("map reducer", () => {
     expect(updated.layers[0].values).toBe(values);
     expect(updated.layers[1]).toBe(state.layers[1]);
   });
+  it("updates and conditionally rolls back one series color", () => {
+    const other = { id: "other", series: [{ id: "x", color: "#999999" }] };
+    const state = { ...initialState, layers: [{ id: "pie", series: [{ id: "a", color: "#111111" }, { id: "b", color: "#222222" }] }, other] };
+    const updated = reducer(state, { type: "seriesColor", layerId: "pie", seriesId: "b", color: "#abcdef" });
+    expect(updated.layers[0].series).toEqual([{ id: "a", color: "#111111" }, { id: "b", color: "#abcdef" }]);
+    expect(updated.layers[1]).toBe(other);
+    expect(reducer(updated, { type: "seriesColor", layerId: "pie", seriesId: "b", color: "#222222", ifColor: "#000000" }).layers[0].series[1].color).toBe("#abcdef");
+    expect(reducer(updated, { type: "seriesColor", layerId: "pie", seriesId: "b", color: "#222222", ifColor: "#abcdef" }).layers[0].series[1].color).toBe("#222222");
+  });
 });

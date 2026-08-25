@@ -12,5 +12,6 @@ export const api = {
   layers: () => request("/api/v2/map-layers"),
   upload: (form) => request("/api/v2/map-layers", { method: "POST", body: form }),
   fromData: (body) => request("/api/v2/map-layers/from-data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
+  updateColors: (id, colors) => request(`/api/v2/map-layers/${encodeURIComponent(id)}/colors`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ colors }) }),
   remove: (id) => request(`/api/v2/map-layers/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };

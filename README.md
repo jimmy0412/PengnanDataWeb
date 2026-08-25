@@ -52,8 +52,9 @@ npm test          # Vitest 與 React Testing Library
 3. 至「年度指標」選擇指標、勾選要比較的里別與年份。
 4. 至「資料表格」使用橫向表格（年份為欄、指標為列）或明細表格。
 5. 彙整後會產出兩份 ODS：**年齡結構**、**戶政指標**（分開下載）。
-6. 圖表顏色會存入瀏覽器 `localStorage`。
+6. 區域與內建人口圖表顏色會存入瀏覽器 `localStorage`；共享圓餅圖與甜甜圈圖配色則寫入伺服器 catalog。
 7. 如需移除資料，可在「刪除年度資料」選擇年份；系統會一併刪除該年原始檔、快取及由該年建立的地圖快照，並依剩餘年份重建 ODS。自行上傳的 CSV 圖層不會被刪除。
+8. 地圖的共享圓餅圖與甜甜圈圖可在圖層工作區逐系列調色；配色會寫入共享 catalog，所有使用者重新載入後皆會看到相同顏色。
 
 ## 總人口定義
 
@@ -117,14 +118,28 @@ templates/        網頁模板
 | GET | `/api/download/ods` | 下載統整 ODS |
 | GET | `/api/map-custom-layers` | 讀取共享地圖圖層 |
 | POST | `/api/map-custom-layers` | 上傳共享 CSV 地圖圖層（multipart：`name`、`chart_type`、`file`） |
-| POST | `/api/map-custom-layers/from-data` | 從已彙整的年度指標或年齡結構建立共享圖層快照 |
+| POST | `/api/map-custom-layers/from-data` | 從已彙整的年度指標建立共享圖層快照 |
 | DELETE | `/api/map-custom-layers/{layer_id}` | 永久刪除共享圖層及其 CSV 來源檔 |
 | GET | `/api/v2/map-layers` | 讀取 schema version 2 的共享圖層 catalog |
 | POST | `/api/v2/map-layers` | 上傳 V2 共享 CSV 圖層 |
-| POST | `/api/v2/map-layers/from-data` | 從既有資料建立 V2 圖層快照 |
+| POST | `/api/v2/map-layers/from-data` | 從既有年度指標建立 V2 圖層快照 |
+| PATCH | `/api/v2/map-layers/{layer_id}/colors` | 更新共享長條圖、圓餅圖或甜甜圈圖的系列配色 |
 | DELETE | `/api/v2/map-layers/{layer_id}` | 刪除 V2 共享圖層 |
 
 V1 地圖端點目前保留作相容層。V1 與 V2 共同讀寫 V2 catalog；首次由 V2 讀取舊 list catalog 時，系統會先在同目錄建立帶時間戳的備份，再以原子替換完成遷移。
+
+`from-data` 的 `data_type` 目前固定為 `indicators`；不再接受以年齡結構建立新共享快照。既有 catalog 中的年齡結構圖層仍會正常顯示並可刪除。
+
+系列配色端點接受部分更新，例如：
+
+```json
+{
+  "colors": {
+    "s1-male": "#0072B2",
+    "s2-female": "#D55E00"
+  }
+}
+```
 
 ## 離線測試（不下載）
 

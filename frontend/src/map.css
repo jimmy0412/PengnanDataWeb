@@ -1,11 +1,14 @@
 .react-map-editor input:not([type="checkbox"]):not([type="color"]), .react-map-editor select { padding: .45rem .6rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; }
 .react-map-editor .layer-actions { display: flex; gap: .25rem; }
+.react-map-editor .layer-series-colors { display: flex; align-items: center; gap: .2rem; margin-left: auto; }
+.react-map-editor .layer-series-colors input[type="color"] { display: block; width: 1.45rem; height: 1.45rem; padding: 1px; border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer; }
 .react-map-editor .icon-button { padding: .2rem .45rem; min-width: 1.9rem; }
 .react-map-editor .map-layer-status { color: #9a3412; font-size: .86rem; }
 .react-chart-icon { border: 0; background: transparent; filter: drop-shadow(0 1px 1px rgb(15 23 42 / .3)); }
 .react-chart-icon svg { width: 100%; height: 100%; overflow: visible; }
 .chart-value-label { fill: #111827; stroke: rgb(255 255 255 / .95); stroke-width: 2.5px; paint-order: stroke fill; font-size: 8px; font-weight: 700; font-variant-numeric: tabular-nums; pointer-events: none; }
 .chart-slice-label { fill: #0f172a; font-size: 8px; }
+.chart-zero-label { font-size: 11px; }
 .react-chart-icon.selected { filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 4px #111827); }
 .map-no-data { display: grid; place-items: center; width: 100%; height: 100%; border: 1px dashed #475569; border-radius: 50%; background: rgb(255 255 255 / .85); color: #334155; font-size: 9px; }
 .react-village-label { width: 0 !important; height: 0 !important; border: 0; background: transparent; }

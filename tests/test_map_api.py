@@ -18,30 +18,19 @@ class MapLayerApiTests(unittest.TestCase):
 
         return asyncio.run(send())
 
-    def test_creates_layers_from_indicator_and_age_data(self):
+    def test_creates_layer_from_indicator_data(self):
         layer = {"id": "layer-1", "name": "測試圖層"}
-        for data_type, metric in [("indicators", "總人口"), ("age", None)]:
-            with self.subTest(data_type=data_type), patch(
-                "app.main.create_custom_layer_from_data", return_value=layer
-            ) as create:
-                response = self.request(
-                    "POST",
-                    "/api/map-custom-layers/from-data",
-                    json={
-                        "name": "測試圖層",
-                        "chart_type": "bar",
-                        "year": 114,
-                        "data_type": data_type,
-                        "gender": "全部",
-                        "metric": metric,
-                    },
-                )
+        with patch("app.main.create_custom_layer_from_data", return_value=layer) as create:
+            response = self.request("POST", "/api/map-custom-layers/from-data", json={"name": "測試圖層", "chart_type": "bar", "year": 114, "data_type": "indicators", "gender": "全部", "metric": "總人口"})
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json(), {"layer": layer})
+        create.assert_called_once_with("測試圖層", "bar", 114, "indicators", "全部", "總人口")
 
-                self.assertEqual(response.status_code, 201)
-                self.assertEqual(response.json(), {"layer": layer})
-                create.assert_called_once_with(
-                    "測試圖層", "bar", 114, data_type, "全部", metric
-                )
+    def test_rejects_age_snapshots_on_v1_and_v2_routes(self):
+        body = {"name": "年齡", "chart_type": "pie", "year": 114, "data_type": "age", "gender": "女"}
+        for route in ["/api/map-custom-layers/from-data", "/api/v2/map-layers/from-data"]:
+            with self.subTest(route=route):
+                self.assertEqual(self.request("POST", route, json=body).status_code, 422)
 
     def test_returns_not_found_for_missing_processed_data(self):
         with patch(
@@ -53,10 +42,11 @@ class MapLayerApiTests(unittest.TestCase):
                 "/api/map-custom-layers/from-data",
                 json={
                     "name": "缺資料",
-                    "chart_type": "pie",
+                    "chart_type": "bar",
                     "year": 999,
-                    "data_type": "age",
+                    "data_type": "indicators",
                     "gender": "女",
+                    "metric": "總人口",
                 },
             )
         self.assertEqual(response.status_code, 404)

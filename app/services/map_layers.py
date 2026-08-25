@@ -6,11 +6,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
-from app.config import AGE_GROUPS, MAP_LAYERS_CATALOG_FILE, MAP_LAYERS_DIR, TARGET_VILLAGES
-from app.services.query_data import query_age_structure, query_indicators
+from app.config import MAP_LAYERS_CATALOG_FILE, MAP_LAYERS_DIR, TARGET_VILLAGES
+from app.services.query_data import query_indicators
 
 CHART_TYPES = {"bar", "pie", "donut", "choropleth"}
-DATA_TYPES = {"indicators", "age"}
+DATA_TYPES = {"indicators"}
 GENDERS = {"全部", "男", "女"}
 INDICATOR_METRICS = {"總人口", "扶老比", "出生率", "自然增加率", "年出生", "年死亡"}
 SERIES_COLORS = ["#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#F0E442", "#6F4E7C", "#8C564B", "#2F4B7C", "#A05195", "#665191", "#FF7C43", "#1B998B", "#B56576", "#4C78A8", "#F58518", "#54A24B", "#E45756", "#72B7B2"]
@@ -181,15 +181,10 @@ def create_map_layer_v2(name, chart_type, csv_bytes):
 def create_custom_layer(name, chart_type, csv_bytes): return _v2_to_v1(create_map_layer_v2(name, chart_type, csv_bytes))
 
 def _processed_values(year, data_type, gender, metric):
-    if data_type not in DATA_TYPES: raise MapLayerValidationError("資料類型必須為 indicators 或 age")
+    if data_type not in DATA_TYPES: raise MapLayerValidationError("資料類型必須為 indicators")
     if gender not in GENDERS: raise MapLayerValidationError("性別必須為全部、男或女")
-    if data_type == "indicators":
-        if metric not in INDICATOR_METRICS: raise MapLayerValidationError("請選擇有效的年度指標")
-        rows = query_indicators([year], TARGET_VILLAGES, gender); series = [metric]; by_village = {row["里"]: row for row in rows if row.get("年份") == year}; raw = {v: {metric: by_village.get(v, {}).get(metric)} for v in TARGET_VILLAGES}
-    else:
-        rows = query_age_structure([year], TARGET_VILLAGES, gender); series = list(AGE_GROUPS); raw = {v: {} for v in TARGET_VILLAGES}
-        for row in rows:
-            if row.get("年份") == year and row.get("里") in raw and row.get("年齡組") in AGE_GROUPS: raw[row["里"]][row["年齡組"]] = row.get("人口數")
+    if metric not in INDICATOR_METRICS: raise MapLayerValidationError("請選擇有效的年度指標")
+    rows = query_indicators([year], TARGET_VILLAGES, gender); series = [metric]; by_village = {row["里"]: row for row in rows if row.get("年份") == year}; raw = {v: {metric: by_village.get(v, {}).get(metric)} for v in TARGET_VILLAGES}
     values = {}
     for village in TARGET_VILLAGES:
         values[village] = {}
@@ -202,13 +197,28 @@ def _processed_values(year, data_type, gender, metric):
 
 def create_map_layer_from_data_v2(name, chart_type, year, data_type, gender, metric=None):
     name = _validate_definition(name, chart_type)
-    if chart_type == "choropleth" and data_type != "indicators": raise MapLayerValidationError("面量圖只能使用年度指標資料")
     series, values = _processed_values(year, data_type, gender, metric)
     units = {"扶老比": "%", "出生率": "‰", "自然增加率": "‰", "總人口": "人", "年出生": "人", "年死亡": "人"}
     source = {"type": "processed_data", "year": year, "data_type": data_type, "gender": gender, "metric": metric if data_type == "indicators" else None, "unit": units.get(metric, "人")}
     return _persist(_build_layer(name, chart_type, series, values, source=source))
 
 def create_custom_layer_from_data(name, chart_type, year, data_type, gender, metric=None): return _v2_to_v1(create_map_layer_from_data_v2(name, chart_type, year, data_type, gender, metric))
+
+def update_map_layer_colors_v2(layer_id, colors):
+    if not isinstance(colors, dict) or not colors: raise MapLayerValidationError("請提供至少一個系列顏色")
+    if any(not isinstance(series_id, str) or not series_id.strip() for series_id in colors): raise MapLayerValidationError("系列 id 無效")
+    if any(not isinstance(color, str) or not re.fullmatch(r"#[0-9A-Fa-f]{6}", color) for color in colors.values()): raise MapLayerValidationError("系列色彩必須為 #RRGGBB 格式")
+    with _LOCK:
+        catalog = load_catalog_v2(); target = next((x for x in catalog["layers"] if x["id"] == layer_id), None)
+        if target is None: raise MapLayerDataNotFoundError("找不到指定的共享圖層")
+        if target["visualization"]["type"] not in {"bar", "pie", "donut"}: raise MapLayerValidationError("只有長條圖、圓餅圖或甜甜圈圖可以修改系列顏色")
+        known_ids = {item["id"] for item in target["series"]}
+        unknown = set(colors) - known_ids
+        if unknown: raise MapLayerValidationError(f"找不到指定的系列：{sorted(unknown)[0]}")
+        for item in target["series"]:
+            if item["id"] in colors: item["color"] = colors[item["id"]]
+        _atomic_write(catalog)
+        return target
 
 def delete_custom_layer(layer_id):
     with _LOCK:

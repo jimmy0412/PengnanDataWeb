@@ -40,6 +40,7 @@ from app.services.map_layers import (
     delete_custom_layer,
     load_catalog_v2,
     load_custom_layers,
+    update_map_layer_colors_v2,
 )
 from app.services.jobs import create_job, get_job, submit_job
 from app.services.pipeline import delete_year, process_years
@@ -66,9 +67,13 @@ class MapLayerFromDataRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     chart_type: Literal["bar", "pie", "donut", "choropleth"]
     year: int
-    data_type: Literal["indicators", "age"]
+    data_type: Literal["indicators"]
     gender: Literal["全部", "男", "女"]
     metric: str | None = None
+
+
+class MapLayerColorsRequest(BaseModel):
+    colors: dict[str, str]
 
 
 class DeleteYearRequest(BaseModel):
@@ -302,6 +307,16 @@ async def api_v2_create_map_layer_from_data(body: MapLayerFromDataRequest):
     except MapLayerDataNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return {"layer": layer}
+
+
+@app.patch("/api/v2/map-layers/{layer_id}/colors")
+async def api_v2_update_map_layer_colors(layer_id: str, body: MapLayerColorsRequest):
+    try:
+        return {"layer": update_map_layer_colors_v2(layer_id, body.colors)}
+    except MapLayerValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except MapLayerDataNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @app.delete("/api/v2/map-layers/{layer_id}", status_code=204)

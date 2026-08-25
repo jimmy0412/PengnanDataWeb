@@ -58,13 +58,26 @@ def test_choropleth_csv_rejects_multiple_value_columns(tmp_path):
             map_layers.create_map_layer_v2("多欄", "choropleth", "里,男,女\n鐵線里,1,2\n".encode())
 
 
-def test_choropleth_from_data_accepts_indicator_and_rejects_age(tmp_path):
+def test_from_data_accepts_indicator_and_rejects_age(tmp_path):
     rows = [{"年份": 114, "里": village, "總人口": index + 1} for index, village in enumerate(map_layers.TARGET_VILLAGES)]
     with patch.object(map_layers, "MAP_LAYERS_DIR", tmp_path), patch.object(map_layers, "MAP_LAYERS_CATALOG_FILE", tmp_path / "catalog.json"), patch.object(map_layers, "query_indicators", return_value=rows):
         layer = map_layers.create_map_layer_from_data_v2("總人口面量圖", "choropleth", 114, "indicators", "全部", "總人口")
         assert layer["source"]["unit"] == "人"
-        with pytest.raises(map_layers.MapLayerValidationError, match="年度指標"):
-            map_layers.create_map_layer_from_data_v2("年齡面量圖", "choropleth", 114, "age", "全部")
+        with pytest.raises(map_layers.MapLayerValidationError, match="indicators"):
+            map_layers.create_map_layer_from_data_v2("年齡圖", "pie", 114, "age", "全部")
+
+
+def test_color_patch_api_updates_layer_and_validates_errors(tmp_path):
+    catalog = tmp_path / "catalog.json"
+    with patch.object(map_layers, "MAP_LAYERS_DIR", tmp_path), patch.object(map_layers, "MAP_LAYERS_CATALOG_FILE", catalog):
+        layer = map_layers.create_map_layer_v2("長條", "bar", "里,甲,乙\n鐵線里,1,2\n".encode())
+        series_id = layer["series"][1]["id"]
+        with patch("app.services.map_layers.MAP_LAYERS_DIR", tmp_path), patch("app.services.map_layers.MAP_LAYERS_CATALOG_FILE", catalog):
+            response = send("PATCH", f"/api/v2/map-layers/{layer['id']}/colors", json={"colors": {series_id: "#abcdef"}})
+            assert response.status_code == 200
+            assert response.json()["layer"]["series"][1]["color"] == "#abcdef"
+            assert send("PATCH", f"/api/v2/map-layers/{layer['id']}/colors", json={"colors": {"missing": "#123456"}}).status_code == 400
+            assert send("PATCH", "/api/v2/map-layers/missing/colors", json={"colors": {series_id: "#123456"}}).status_code == 404
 
 
 def test_choropleth_upload_api_rejects_multiple_columns():

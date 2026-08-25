@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app.config import AGE_GROUPS, TARGET_VILLAGES
+from app.config import TARGET_VILLAGES
 from app.services import map_layers
 
 
@@ -62,20 +62,16 @@ class MapLayerCatalogTests(unittest.TestCase):
         self.assertEqual(layer["values"]["鐵線里"]["總人口"], 100.0)
         self.assertNotIn("source_file", layer)
 
-    def test_creates_age_snapshot_with_all_age_groups(self):
-        rows = [
-            {"年份": 114, "里": village, "性別": "女", "年齡組": group, "人口數": index}
-            for village in TARGET_VILLAGES
-            for index, group in enumerate(AGE_GROUPS)
-        ]
-        with patch.object(map_layers, "query_age_structure", return_value=rows):
-            layer = map_layers.create_custom_layer_from_data(
-                "女性年齡", "pie", 114, "age", "女"
-            )
-
-        self.assertEqual(layer["series"], AGE_GROUPS)
-        self.assertEqual(layer["source_meta"]["data_type"], "age")
-        self.assertIsNone(layer["source_meta"]["metric"])
+    def test_rejects_new_age_snapshot_but_keeps_existing_age_layer(self):
+        with self.assertRaisesRegex(map_layers.MapLayerValidationError, "indicators"):
+            map_layers.create_custom_layer_from_data("女性年齡", "pie", 114, "age", "女")
+        existing = map_layers._build_layer(
+            "舊年齡圖層", "pie", ["0-4歲"], {"鐵線里": {"0-4歲": 12}},
+            source={"type": "processed_data", "year": 113, "data_type": "age", "gender": "女", "metric": None, "unit": "人"},
+        )
+        map_layers._atomic_write({"schema_version": 2, "layers": [existing]})
+        self.assertEqual(map_layers.load_catalog_v2()["layers"][0]["source"]["data_type"], "age")
+        self.assertTrue(map_layers.delete_custom_layer(existing["id"]))
 
     def test_rejects_incomplete_processed_data(self):
         with patch.object(map_layers, "query_indicators", return_value=[]):
@@ -104,6 +100,28 @@ class MapLayerCatalogTests(unittest.TestCase):
             )
         self.assertTrue(map_layers.delete_custom_layer(layer["id"]))
         self.assertEqual(map_layers.load_custom_layers(), [])
+
+    def test_updates_selected_bar_series_colors_atomically(self):
+        layer = map_layers.create_map_layer_v2("測試人口", "bar", CSV.encode())
+        first, second = [item["id"] for item in layer["series"]]
+        updated = map_layers.update_map_layer_colors_v2(layer["id"], {first: "#abcdef", second: "#123456"})
+        self.assertEqual([item["color"] for item in updated["series"]], ["#abcdef", "#123456"])
+        persisted = map_layers.load_catalog_v2()["layers"][0]
+        self.assertEqual([item["color"] for item in persisted["series"]], ["#abcdef", "#123456"])
+
+    def test_rejects_invalid_color_updates_without_changing_catalog(self):
+        layer = map_layers.create_map_layer_v2("測試人口", "bar", CSV.encode())
+        original = map_layers.load_catalog_v2()
+        for colors, message in [({}, "至少一個"), ({"missing": "#abcdef"}, "找不到指定的系列"), ({layer["series"][0]["id"]: "red"}, "#RRGGBB")]:
+            with self.subTest(colors=colors), self.assertRaisesRegex(map_layers.MapLayerValidationError, message):
+                map_layers.update_map_layer_colors_v2(layer["id"], colors)
+        self.assertEqual(map_layers.load_catalog_v2(), original)
+
+    def test_rejects_choropleth_series_color_updates(self):
+        layer = map_layers.create_map_layer_v2("測試面量圖", "choropleth", "里,數值\n鐵線里,1\n".encode())
+        series_id = layer["series"][0]["id"]
+        with self.assertRaisesRegex(map_layers.MapLayerValidationError, "只有長條圖、圓餅圖或甜甜圈圖"):
+            map_layers.update_map_layer_colors_v2(layer["id"], {series_id: "#abcdef"})
 
     def test_loads_legacy_catalog_as_csv_source(self):
         self.layers_dir.mkdir(parents=True, exist_ok=True)

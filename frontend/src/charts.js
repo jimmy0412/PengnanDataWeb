@@ -9,7 +9,7 @@ function arc(center, radius, start, end, inner = 0) {
   return `M${a} A${radius},${radius} 0 ${large} 1 ${b} L${c} A${inner},${inner} 0 ${large} 0 ${d} Z`;
 }
 export function chartHtml(layer, village, baseSize) {
-  const row = layer.values?.[village] || {}, values = layer.series.map((series) => Number(row[series.id]) || 0), type = layer.visualization.type;
+  const sourceRow = layer.values?.[village], row = sourceRow || {}, hasCompleteData = Boolean(sourceRow) && layer.series.every((series) => Object.hasOwn(row, series.id) && Number.isFinite(Number(row[series.id]))), values = layer.series.map((series) => Number(row[series.id]) || 0), type = layer.visualization.type;
   if (type === "bar") {
     const size = baseSize, layout = barLayout(values, globalDomain(layer), size);
     const bars = layout.bars.map((bar, index) => `<rect x="${bar.x}" y="${bar.y}" width="${bar.width}" height="${bar.height}" rx="1.5" fill="${colorForSeries(layer.series[index], index)}"><title>${escape(layer.series[index].name)}：${escape(bar.value)}</title></rect>`).join("");
@@ -21,8 +21,12 @@ export function chartHtml(layer, village, baseSize) {
     }).join("");
     return { size, html: `<svg viewBox="0 0 ${size} ${size}" aria-label="${escape(village)} ${escape(layer.name)}"><line x1="0" y1="${layout.zero}" x2="${size}" y2="${layout.zero}" stroke="#111827" stroke-width="1"/>${bars}${labels}</svg>` };
   }
+  if (!hasCompleteData) return { size: baseSize * 0.42, html: `<span class="map-no-data" aria-label="${escape(village)} 無資料">無資料</span>` };
   const totals = Object.values(layer.values || {}).map((entry) => Object.values(entry).reduce((sum, value) => sum + value, 0)), total = values.reduce((sum, value) => sum + value, 0), size = pieSize(total, Math.max(0, ...totals), baseSize);
-  if (!size) return { size: baseSize * 0.42, html: `<span class="map-no-data" aria-label="${escape(village)} 無資料">無資料</span>` };
+  if (!size) {
+    const zeroSize = baseSize * 0.42, center = zeroSize / 2, radius = zeroSize * 0.43;
+    return { size: zeroSize, html: `<svg class="chart-zero-value" viewBox="0 0 ${zeroSize} ${zeroSize}" aria-label="${escape(village)} ${escape(layer.name)}：0"><circle cx="${center}" cy="${center}" r="${radius}" fill="#fff" stroke="${colorForSeries(layer.series[0], 0)}" stroke-width="2"/><text class="chart-value-label chart-zero-label" x="${center}" y="${center}" text-anchor="middle" dominant-baseline="central">0</text></svg>` };
+  }
   const center = size / 2, radius = size * 0.47, inner = type === "donut" ? radius * 0.48 : 0;
   let angle = 0;
   const labels = [];

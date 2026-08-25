@@ -20,4 +20,16 @@ describe("map chart value labels", () => {
     expect(result.html).toContain(">23</text>");
     expect(result.html).not.toContain(">1</text>");
   });
+  it("distinguishes a valid zero pie value from missing data", () => {
+    const items = series(1), layer = { name: "出生", visualization: { type: "donut" }, series: items, values: { 五德里: { s0: 0 } } };
+    const zero = chartHtml(layer, "五德里", 80);
+    expect(zero.html).toContain("chart-zero-value");
+    expect(zero.html).toContain(">0</text>");
+    expect(zero.html).not.toContain("無資料");
+    expect(chartHtml(layer, "不存在里", 80).html).toContain("無資料");
+  });
+  it("treats an incomplete pie row as missing data", () => {
+    const items = series(2), layer = { name: "圓餅", visualization: { type: "pie" }, series: items, values: { A: { s0: 0 } } };
+    expect(chartHtml(layer, "A", 80).html).toContain("無資料");
+  });
 });
