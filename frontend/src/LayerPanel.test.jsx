@@ -13,6 +13,13 @@ describe("LayerPanel", () => {
     expect(dispatch).toHaveBeenCalledWith({ type: "toggle", id: "bottom" });
   });
 
+  it("offers a reset button beside the village-label layer", () => {
+    const dispatch = vi.fn();
+    render(<LayerPanel layers={[{ id: "village-labels", name: "地名", kind: "labels", visible: true }]} dispatch={dispatch} onDelete={() => {}}/>);
+    fireEvent.click(screen.getByRole("button", { name: "還原位置" }));
+    expect(dispatch).toHaveBeenCalledWith({ type: "resetLabels" });
+  });
+
   it("offers per-series colors for shared bar, pie and donut layers", () => {
     const onColorChange = vi.fn(), layers = [
       { id: "bar", name: "長條", visible: true, shared: true, visualization: { type: "bar" }, series: [{ id: "a", name: "甲", color: "#111111" }] },

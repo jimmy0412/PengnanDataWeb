@@ -15,6 +15,7 @@ export function reducer(state, action) {
     case "color": return { ...state, villageColors: { ...state.villageColors, [action.id]: action.color } };
     case "backgroundColor": return { ...state, mapBackgroundColor: action.color };
     case "label": return { ...state, labelPositions: { ...state.labelPositions, [action.id]: action.position } };
+    case "resetLabels": return { ...state, labelPositions: {} };
     case "export": return { ...state, export: { active: action.active, error: action.error || null } };
     case "status": return { ...state, status: [...state.status, action.message] };
     default: return state;

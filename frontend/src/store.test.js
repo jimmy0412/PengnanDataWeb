@@ -14,6 +14,10 @@ describe("map reducer", () => {
     expect(updated.mapBackgroundColor).toBe("#abcdef");
     expect(updated.villageColors).toEqual({});
   });
+  it("restores every village label to its initial position", () => {
+    const state = { ...initialState, labelPositions: { village: { lat: 23, lng: 119 } } };
+    expect(reducer(state, { type: "resetLabels" }).labelPositions).toEqual({});
+  });
   it("updates population values without replacing concurrently loaded layers", () => {
     const state = { ...initialState, layers: [{ id: "population", values: {} }, { id: "new-layer", values: { A: { x: 1 } } }] };
     const values = { A: { male: 10, female: 11 } };
