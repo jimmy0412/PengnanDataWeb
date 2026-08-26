@@ -1,6 +1,6 @@
 import { scaleLinear } from "d3-scale";
 
-export const DEFAULT_VILLAGE_COLORS = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2"];
+export const DEFAULT_VILLAGE_COLORS = ["#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69"];
 export const DEFAULT_SERIES_COLORS = ["#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#F0E442"];
 export const DEFAULT_GENDER_COLORS = { male: "#3b82f6", female: "#ec4899" };
 export const DEFAULT_MAP_BACKGROUND_COLOR = "#aad3df";

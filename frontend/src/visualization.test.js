@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { barLayout, chartSize, choroplethScale, DEFAULT_CHOROPLETH_COLORS, globalDomain, NO_DATA_COLOR, pieSize, topVisibleChoropleth } from "./visualization";
+import { barLayout, chartSize, choroplethScale, DEFAULT_CHOROPLETH_COLORS, DEFAULT_MAP_BACKGROUND_COLOR, DEFAULT_VILLAGE_COLORS, globalDomain, NO_DATA_COLOR, pieSize, topVisibleChoropleth } from "./visualization";
 
 const layer = { values: { A: { x: -10, y: 20 }, B: { x: 5, y: 0 } } };
+describe("default map colors", () => {
+  it("uses distinguishable pastel village colors without changing the sea background", () => {
+    expect(DEFAULT_VILLAGE_COLORS).toEqual(["#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69"]);
+    expect(DEFAULT_MAP_BACKGROUND_COLOR).toBe("#aad3df");
+  });
+});
+
 describe("shared visualization scales", () => {
   it("includes one global zero baseline for positive and negative bars", () => {
     expect(globalDomain(layer)).toEqual([-10, 20]);

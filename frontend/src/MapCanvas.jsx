@@ -3,7 +3,7 @@ import L from "leaflet";
 import { GeoJSON, MapContainer, Marker, Pane, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import { chartHtml } from "./charts";
 import { featureInteriorPoint, villageKey, villageName } from "./geo";
-import { chartSize, choroplethScale, formatMapNumber, NO_DATA_COLOR } from "./visualization";
+import { chartSize, choroplethScale, DEFAULT_VILLAGE_COLORS, formatMapNumber, NO_DATA_COLOR } from "./visualization";
 
 function MapLifecycle({ geojson, onMap, onZoom }) {
   const map = useMap();
@@ -12,7 +12,7 @@ function MapLifecycle({ geojson, onMap, onZoom }) {
   return null;
 }
 function Boundary({ layer, geojson, colors, selected, onSelect }) {
-  return <Pane name={layer.id} style={{ zIndex: layer.zIndex }}><GeoJSON key={`${JSON.stringify(colors)}-${selected?.village || ""}`} data={geojson} style={(feature) => ({ color: selected?.village === villageName(feature) ? "#111827" : "#374151", weight: selected?.village === villageName(feature) ? 4 : 1.5, fillColor: colors[villageKey(feature)] || "#1f77b4", fillOpacity: 1 })} onEachFeature={(feature, item) => item.on({ click: () => onSelect({ village: villageName(feature), layerId: "population" }) })}/></Pane>;
+  return <Pane name={layer.id} style={{ zIndex: layer.zIndex }}><GeoJSON key={`${JSON.stringify(colors)}-${selected?.village || ""}`} data={geojson} style={(feature) => ({ color: selected?.village === villageName(feature) ? "#111827" : "#374151", weight: selected?.village === villageName(feature) ? 4 : 1.5, fillColor: colors[villageKey(feature)] || DEFAULT_VILLAGE_COLORS[0], fillOpacity: 1 })} onEachFeature={(feature, item) => item.on({ click: () => onSelect({ village: villageName(feature), layerId: "population" }) })}/></Pane>;
 }
 function Choropleth({ layer, geojson, selected, onSelect }) {
   const itemRef = useRef(null), scale = choroplethScale(layer), series = layer.series[0], patternId = `no-data-${layer.id.replace(/[^A-Za-z0-9_-]/g, "")}`;
