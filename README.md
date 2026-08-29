@@ -24,6 +24,18 @@ PYTHONPATH=. uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 瀏覽器開啟：http://127.0.0.1:8000
 
+### Windows 快速安裝與啟動
+
+1. 安裝 [Python 3.10 以上版本](https://www.python.org/downloads/windows/)，安裝時勾選 **Add Python to PATH**。
+2. 雙擊 `install-windows.bat`。安裝程式會建立 `.venv` 虛擬環境，並安裝 `requirements.txt` 內的網站套件。
+3. 在專案目錄執行下列指令啟動網站（預設會自動開啟瀏覽器）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start-windows.ps1
+```
+
+可用參數：`-Port 8080` 更改連接埠、`-NoBrowser` 不開啟瀏覽器、`-NoReload` 關閉自動重載。Windows 安裝檔只安裝網站執行所需的 Python 套件，不需要安裝 Node.js 或前端開發套件。
+
 `/map` 的正式 bundle 已放在 `static/dist`，因此正式執行 FastAPI 不需要 Node.js。修改地圖前端時使用：
 
 ```bash
