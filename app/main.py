@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 
 from app.config import (
     ALL_VILLAGES_LABEL,
+    COMPARISON_CHART_METRICS,
     LINE_CHART_METRICS,
     STATIC_DIR,
     STATISTICS_PAGE_URL,
@@ -45,6 +46,7 @@ from app.services.map_layers import (
 from app.services.jobs import create_job, get_job, submit_job
 from app.services.pipeline import delete_year, process_years
 from app.services.query_data import (
+    build_indicator_comparison,
     build_indicators_pivot,
     build_map_village_data,
     query_age_structure,
@@ -107,6 +109,13 @@ async def page_indicators(request: Request):
     ctx = _page_context(request, "indicators")
     ctx["line_chart_metrics"] = LINE_CHART_METRICS
     return templates.TemplateResponse(request, "indicators.html", ctx)
+
+
+@app.get("/bar-average", response_class=HTMLResponse)
+async def page_bar_average(request: Request):
+    ctx = _page_context(request, "bar-average")
+    ctx["comparison_chart_metrics"] = COMPARISON_CHART_METRICS
+    return templates.TemplateResponse(request, "bar_average.html", ctx)
 
 
 @app.get("/tables", response_class=HTMLResponse)
@@ -202,6 +211,36 @@ async def api_indicators(
     if not records:
         raise HTTPException(status_code=404, detail="找不到符合條件的資料，請先執行彙整")
     return {"data": records}
+
+
+@app.get("/api/indicator-comparison")
+async def api_indicator_comparison(
+    years: list[int] = Query(...),
+    village: str = Query(...),
+    gender: Literal["全部", "男", "女"] = "全部",
+    metric: str = Query(...),
+):
+    metric_meta = next(
+        (item for item in COMPARISON_CHART_METRICS if item["key"] == metric), None
+    )
+    if village not in TARGET_VILLAGES:
+        raise HTTPException(status_code=400, detail=f"不支援的里別：{village}")
+    if metric_meta is None:
+        raise HTTPException(status_code=400, detail=f"不支援的指標：{metric}")
+
+    series = build_indicator_comparison(years, village, gender, metric)
+    if not any(item["sample_size"] > 0 for item in series):
+        raise HTTPException(status_code=404, detail="找不到符合條件的資料，請先執行彙整")
+    return {
+        "metric": {
+            "key": metric_meta["key"],
+            "label": metric_meta["label"],
+            "unit": metric_meta["unit"],
+        },
+        "village": village,
+        "gender": gender,
+        "series": series,
+    }
 
 
 @app.get("/api/indicators-pivot")

@@ -7,6 +7,8 @@ const defaultColors = {
   male: "#3b82f6",
   female: "#ec4899",
   line: DEFAULT_LINE_COLORS,
+  comparisonBar: "#4e79a7",
+  comparisonAverage: "#e15759",
 };
 
 function loadColors() {

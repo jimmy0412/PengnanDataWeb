@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}年度長條比較 - 澎湖澎南區人口資料{% endblock %}
+{% block subtitle %}比較單一里歷年指標與澎南七里平均{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>圖表設定</h2>
+  <div class="row">
+    <div class="field">
+      <span class="field-label">年份（可複選）</span>
+      <div id="comparison-years" class="year-checks" role="group" aria-label="年份">
+        {% for year in processed_years %}
+        <label><input class="year-cb" type="checkbox" value="{{ year }}" checked /> {{ year }}</label>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="field">
+      <label for="comparison-village">里別</label>
+      <select id="comparison-village">
+        {% for village in villages %}
+        <option value="{{ village }}">{{ village }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="comparison-gender">性別</label>
+      <select id="comparison-gender">
+        <option value="全部" selected>全部</option>
+        <option value="男">男</option>
+        <option value="女">女</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="comparison-metric">指標</label>
+      <select id="comparison-metric">
+        {% for metric in comparison_chart_metrics %}
+        <option value="{{ metric.key }}"{% if loop.first %} selected{% endif %}>{{ metric.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="comparison-bar-color">柱狀顏色</label>
+      <input id="comparison-bar-color" type="color" />
+    </div>
+    <div class="field">
+      <label for="comparison-average-color">平均折線顏色</label>
+      <input id="comparison-average-color" type="color" />
+    </div>
+    <div class="field">
+      <label for="comparison-bar-width">
+        Bar 寬度：<output id="comparison-bar-width-value" for="comparison-bar-width">70%</output>
+      </label>
+      <input
+        id="comparison-bar-width"
+        type="range"
+        min="10"
+        max="100"
+        step="5"
+        value="70"
+      />
+    </div>
+    <button id="comparison-refresh" type="button" class="secondary">更新圖表</button>
+    <div class="field">
+      <span class="field-label">平均線</span>
+      <label>
+        <input id="comparison-average-visible" type="checkbox" checked />
+        顯示七里平均線
+      </label>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2 id="comparison-chart-heading">歷年長條與七里平均</h2>
+  <div class="export-toolbar">
+    <span class="hint">下載圖表：</span>
+    <button type="button" class="secondary" data-export-chart data-export-format="png">PNG</button>
+    <button type="button" class="secondary" data-export-chart data-export-format="jpg">JPG</button>
+  </div>
+  <div class="chart-box">
+    <canvas id="comparison-chart" role="img" aria-label="單一里歷年指標與七里平均比較圖"></canvas>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.COMPARISON_CHART_METRICS = {{ comparison_chart_metrics | tojson }};
+</script>
+<script src="/static/js/common.js?v=4"></script>
+<script src="/static/js/export.js"></script>
+<script src="/static/js/bar_average.js?v=3"></script>
+{% endblock %}

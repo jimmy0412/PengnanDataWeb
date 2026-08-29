@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 from app.config import AGE_GROUPS, ALL_VILLAGES_LABEL, TARGET_VILLAGES
 from app.services.export_ods import load_year_cache
 
@@ -260,3 +262,43 @@ def query_indicators(
             records.append(row)
 
     return records
+
+
+def build_indicator_comparison(
+    years: list[int],
+    village: str,
+    gender: str,
+    metric: str,
+) -> list[dict]:
+    """Compare one village with the arithmetic mean of available target villages."""
+    sorted_years = sorted(set(years))
+    records = query_indicators(sorted_years, TARGET_VILLAGES, gender)
+    by_year_village = {
+        (int(row["年份"]), row["里"]): row
+        for row in records
+        if row.get("里") in TARGET_VILLAGES
+    }
+
+    def finite_value(row: dict | None) -> int | float | None:
+        value = row.get(metric) if row else None
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        return value if math.isfinite(value) else None
+
+    series: list[dict] = []
+    for year in sorted_years:
+        values = [
+            value
+            for target in TARGET_VILLAGES
+            if (value := finite_value(by_year_village.get((year, target)))) is not None
+        ]
+        selected_value = finite_value(by_year_village.get((year, village)))
+        series.append(
+            {
+                "year": year,
+                "village_value": selected_value,
+                "average": round(sum(values) / len(values), 2) if values else None,
+                "sample_size": len(values),
+            }
+        )
+    return series
