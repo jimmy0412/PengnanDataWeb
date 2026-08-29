@@ -1,6 +1,7 @@
 let comparisonChart = null;
 let averageLineVisible = true;
 let comparisonBarWidth = 0.7;
+let focusedScaleEnabled = true;
 
 function selectedComparisonMetric() {
   const key = document.getElementById("comparison-metric")?.value;
@@ -31,6 +32,39 @@ function formatComparisonValue(value, unit) {
   const formatted = new Intl.NumberFormat("zh-TW", { maximumFractionDigits: 2 }).format(value);
   return unit ? `${formatted} ${unit}` : formatted;
 }
+
+const comparisonValueLabels = {
+  id: "comparisonValueLabels",
+  afterDatasetsDraw(chart) {
+    if (!focusedScaleEnabled) return;
+    const { ctx, chartArea } = chart;
+    chart.data.datasets.forEach((dataset, datasetIndex) => {
+      if (dataset.type !== "bar" || !chart.isDatasetVisible(datasetIndex)) return;
+      const metadata = chart.getDatasetMeta(datasetIndex);
+      metadata.data.forEach((bar, dataIndex) => {
+        const rawValue = dataset.data[dataIndex];
+        if (rawValue == null || !Number.isFinite(Number(rawValue))) return;
+        const value = Number(rawValue);
+        const isNegative = value < 0;
+        const y = isNegative
+          ? Math.min(chartArea.bottom - 2, bar.y + 6)
+          : Math.max(chartArea.top + 2, bar.y - 6);
+
+        ctx.save();
+        ctx.fillStyle = "#1f2937";
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+        ctx.lineWidth = 3;
+        ctx.font = "600 12px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = isNegative ? "top" : "bottom";
+        const label = formatComparisonValue(value);
+        ctx.strokeText(label, bar.x, y);
+        ctx.fillText(label, bar.x, y);
+        ctx.restore();
+      });
+    });
+  },
+};
 
 function comparisonTitle(metric, village, gender) {
   return `${metric.label}：${village}與七里平均（${gender}）`;
@@ -95,7 +129,8 @@ function comparisonOptions(metric, village, gender) {
     scales: {
       x: { title: { display: true, text: "民國年" } },
       y: {
-        beginAtZero: true,
+        beginAtZero: !focusedScaleEnabled,
+        grace: focusedScaleEnabled ? "10%" : 0,
         title: { display: true, text: metric.y_axis || metric.label },
       },
     },
@@ -113,6 +148,7 @@ function renderComparisonChart(result, metric, colors) {
       type: "bar",
       data: { labels, datasets },
       options,
+      plugins: [comparisonValueLabels],
     });
     return;
   }
@@ -190,6 +226,14 @@ function updateComparisonBarWidth() {
   comparisonChart.update("none");
 }
 
+function updateFocusedScale() {
+  focusedScaleEnabled = document.getElementById("comparison-focused-scale").checked;
+  if (!comparisonChart) return;
+  comparisonChart.options.scales.y.beginAtZero = !focusedScaleEnabled;
+  comparisonChart.options.scales.y.grace = focusedScaleEnabled ? "10%" : 0;
+  comparisonChart.update();
+}
+
 function comparisonExportBasename() {
   const { village, gender, metric } = comparisonSelections();
   return `年度長條比較_${metric?.label || "指標"}_${village}_${gender}`;
@@ -205,6 +249,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   document
     .getElementById("comparison-bar-width")
     .addEventListener("input", updateComparisonBarWidth);
+  document
+    .getElementById("comparison-focused-scale")
+    .addEventListener("change", updateFocusedScale);
   document.getElementById("comparison-years").addEventListener("change", (event) => {
     if (event.target.classList.contains("year-cb")) refreshComparisonChart();
   });

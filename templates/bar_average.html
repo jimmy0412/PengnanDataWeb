@@ -71,6 +71,13 @@
         顯示七里平均線
       </label>
     </div>
+    <div class="field">
+      <span class="field-label">數值尺度</span>
+      <label>
+        <input id="comparison-focused-scale" type="checkbox" checked />
+        放大細微差異
+      </label>
+    </div>
   </div>
 </section>
 
@@ -84,6 +91,7 @@
   <div class="chart-box">
     <canvas id="comparison-chart" role="img" aria-label="單一里歷年指標與七里平均比較圖"></canvas>
   </div>
+  <p class="hint">勾選「放大細微差異」時，Y 軸會依目前顯示的資料範圍自動縮放，請搭配柱頂數值判讀。</p>
 </section>
 {% endblock %}
 
@@ -93,5 +101,5 @@
 </script>
 <script src="/static/js/common.js?v=4"></script>
 <script src="/static/js/export.js"></script>
-<script src="/static/js/bar_average.js?v=3"></script>
+<script src="/static/js/bar_average.js?v=5"></script>
 {% endblock %}
