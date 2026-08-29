@@ -101,7 +101,7 @@ def test_bar_average_page_renders_controls_and_active_navigation():
     assert response.text.count('class="year-cb"') == 2
     for metric in ("總人口", "年出生", "年死亡", "扶老比", "出生率", "自然增加率"):
         assert f'<option value="{metric}"' in response.text
-    assert "/static/js/bar_average.js?v=5" in response.text
+    assert "/static/js/bar_average.js?v=6" in response.text
     assert "chart.js@4.4.9" in response.text
     assert 'id="comparison-average-visible" type="checkbox" checked' in response.text
     assert 'id="comparison-focused-scale" type="checkbox" checked' in response.text
@@ -116,6 +116,7 @@ def test_bar_average_script_supports_checking_the_average_line():
     assert "let averageLineVisible = true" in script
     assert "hidden: !averageLineVisible" in script
     assert "comparisonChart.setDatasetVisibility(averageIndex, averageLineVisible)" in script
+    assert 'legendItem.text !== "七里平均" || averageLineVisible' in script
     assert '.addEventListener("change", updateAverageLineVisibility)' in script
     assert "barPercentage: comparisonBarWidth" in script
     assert '.addEventListener("input", updateComparisonBarWidth)' in script

@@ -111,7 +111,14 @@ function comparisonOptions(metric, village, gender) {
         padding: { top: 4, bottom: 20 },
         font: { size: 20, weight: "bold" },
       },
-      legend: { position: "top" },
+      legend: {
+        position: "top",
+        labels: {
+          filter(legendItem) {
+            return legendItem.text !== "七里平均" || averageLineVisible;
+          },
+        },
+      },
       tooltip: {
         mode: "index",
         intersect: false,
