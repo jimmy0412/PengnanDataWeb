@@ -1,4 +1,5 @@
 import { DEFAULT_GENDER_COLORS } from "./visualization";
+import { sanitizeTitleSettings } from "./title";
 
 export const STORAGE_KEY = "pengnan.map.v3";
 export const GENDER_COLOR_KEY = "penghu_population_colors";
@@ -15,10 +16,11 @@ export function loadWorkspace(storage, layerIds = [], villageIds = []) {
   const villageColors = Object.fromEntries(Object.entries(raw.villageColors || {}).filter(([id, color]) => allowedVillages.has(id) && COLOR_PATTERN.test(color)));
   const mapBackgroundColor = COLOR_PATTERN.test(raw.mapBackgroundColor || "") ? raw.mapBackgroundColor : null;
   const labelPositions = Object.fromEntries(Object.entries(raw.labelPositions || {}).filter(([id, value]) => allowedVillages.has(id) && validPosition(value)));
-  if (!current) storage.setItem(STORAGE_KEY, JSON.stringify({ layers, villageColors, mapBackgroundColor, labelPositions, migrated: true }));
-  return { layers, villageColors, mapBackgroundColor, labelPositions };
+  const titleSettings = sanitizeTitleSettings(raw.titleSettings);
+  if (!current) storage.setItem(STORAGE_KEY, JSON.stringify({ layers, villageColors, mapBackgroundColor, labelPositions, titleSettings, migrated: true }));
+  return { layers, villageColors, mapBackgroundColor, labelPositions, titleSettings };
 }
-export function saveWorkspace(storage, state) { storage.setItem(STORAGE_KEY, JSON.stringify({ layers: state.layers.map(({ id, visible }) => ({ id, visible })), villageColors: state.villageColors, mapBackgroundColor: state.mapBackgroundColor, labelPositions: state.labelPositions })); }
+export function saveWorkspace(storage, state) { storage.setItem(STORAGE_KEY, JSON.stringify({ layers: state.layers.map(({ id, visible }) => ({ id, visible })), villageColors: state.villageColors, mapBackgroundColor: state.mapBackgroundColor, labelPositions: state.labelPositions, titleSettings: sanitizeTitleSettings(state.titleSettings) })); }
 
 export function loadGenderColors(storage) {
   const saved = read(storage, GENDER_COLOR_KEY, {});

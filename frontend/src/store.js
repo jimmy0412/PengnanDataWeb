@@ -1,6 +1,7 @@
 import { DEFAULT_MAP_BACKGROUND_COLOR } from "./visualization";
+import { DEFAULT_TITLE_SETTINGS, updateTitleSettings } from "./title";
 
-export const initialState = { year: null, layers: [], selected: null, villageColors: {}, mapBackgroundColor: DEFAULT_MAP_BACKGROUND_COLOR, labelPositions: {}, export: { active: false, error: null }, status: [] };
+export const initialState = { year: null, layers: [], selected: null, villageColors: {}, mapBackgroundColor: DEFAULT_MAP_BACKGROUND_COLOR, labelPositions: {}, titleSettings: { ...DEFAULT_TITLE_SETTINGS, position: { ...DEFAULT_TITLE_SETTINGS.position } }, export: { active: false, error: null }, status: [] };
 
 export function reducer(state, action) {
   switch (action.type) {
@@ -16,6 +17,8 @@ export function reducer(state, action) {
     case "backgroundColor": return { ...state, mapBackgroundColor: action.color };
     case "label": return { ...state, labelPositions: { ...state.labelPositions, [action.id]: action.position } };
     case "resetLabels": return { ...state, labelPositions: {} };
+    case "title": return { ...state, titleSettings: updateTitleSettings(state.titleSettings, action.changes) };
+    case "resetTitlePosition": return { ...state, titleSettings: { ...state.titleSettings, position: { ...DEFAULT_TITLE_SETTINGS.position } } };
     case "export": return { ...state, export: { active: action.active, error: action.error || null } };
     case "status": return { ...state, status: [...state.status, action.message] };
     default: return state;

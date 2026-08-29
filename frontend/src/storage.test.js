@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GENDER_COLOR_KEY, loadGenderColors, loadWorkspace, STORAGE_KEY } from "./storage";
+import { GENDER_COLOR_KEY, loadGenderColors, loadWorkspace, saveWorkspace, STORAGE_KEY } from "./storage";
 
 describe("localStorage migration", () => {
   it("migrates once and ignores missing, duplicate, and malformed values", () => {
@@ -30,5 +30,13 @@ describe("localStorage migration", () => {
 
     localStorage.setItem(GENDER_COLOR_KEY, "not-json");
     expect(loadGenderColors(localStorage)).toEqual({ male: "#3b82f6", female: "#ec4899" });
+  });
+  it("round-trips valid title settings and repairs malformed saved values", () => {
+    localStorage.clear();
+    saveWorkspace(localStorage, { layers: [], villageColors: {}, mapBackgroundColor: "#aad3df", labelPositions: {}, titleSettings: { text: "測試標題", fontSize: 48, color: "#123456", position: { x: 0.25, y: 0.2 } } });
+    expect(loadWorkspace(localStorage).titleSettings).toEqual({ text: "測試標題", fontSize: 48, color: "#123456", position: { x: 0.25, y: 0.2 } });
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ titleSettings: { text: 42, fontSize: "huge", color: "red", position: { x: -1, y: 4 } } }));
+    expect(loadWorkspace(localStorage).titleSettings).toEqual({ text: "澎南區地圖", fontSize: 32, color: "#111827", position: { x: 0.5, y: 0.08 } });
   });
 });

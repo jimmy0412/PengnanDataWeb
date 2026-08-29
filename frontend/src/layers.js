@@ -17,6 +17,7 @@ export function builtInLayers(genderColors = DEFAULT_GENDER_COLORS) {
       source: { type: "processed_data" },
     },
     { id: "village-labels", name: "地名", kind: "labels", visible: true },
+    { id: "map-title", name: "地圖標題", kind: "title", visible: true },
   ];
 }
 
@@ -26,7 +27,7 @@ export function mergeLayers(custom = [], saved = [], current = [], genderColors 
   const population = currentPopulation
     ? { ...builtIns[1], values: currentPopulation.values || {} }
     : builtIns[1];
-  const definitions = [builtIns[0], population, ...custom.map((layer) => ({ ...layer, shared: true, visible: true })), builtIns[2]];
+  const definitions = [builtIns[0], population, ...custom.map((layer) => ({ ...layer, shared: true, visible: true })), ...builtIns.slice(2)];
   const byId = new Map(definitions.map((layer) => [layer.id, layer]));
   const visibility = new Map(saved.map((item) => [item.id, item.visible]));
   const ids = saved.map((item) => item.id).filter((id, index, all) => byId.has(id) && all.indexOf(id) === index);

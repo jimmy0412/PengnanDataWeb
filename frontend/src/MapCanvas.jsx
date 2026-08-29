@@ -11,8 +11,15 @@ function MapLifecycle({ geojson, onMap, onZoom }) {
   useEffect(() => { onMap(map); if (geojson?.features?.length) map.fitBounds(L.geoJSON(geojson).getBounds(), { padding: [20, 20] }); }, [map, geojson, onMap]);
   return null;
 }
+export function LayerPane({ layer, children, className }) {
+  const paneRef = useRef(null);
+  useEffect(() => {
+    if (paneRef.current) paneRef.current.style.zIndex = String(layer.zIndex);
+  }, [layer.zIndex]);
+  return <Pane ref={paneRef} name={layer.id} className={className} style={{ zIndex: layer.zIndex }}>{children}</Pane>;
+}
 function Boundary({ layer, geojson, colors, selected, onSelect }) {
-  return <Pane name={layer.id} style={{ zIndex: layer.zIndex }}><GeoJSON key={`${JSON.stringify(colors)}-${selected?.village || ""}`} data={geojson} style={(feature) => ({ color: selected?.village === villageName(feature) ? "#111827" : "#374151", weight: selected?.village === villageName(feature) ? 4 : 1.5, fillColor: colors[villageKey(feature)] || DEFAULT_VILLAGE_COLORS[0], fillOpacity: 1 })} onEachFeature={(feature, item) => item.on({ click: () => onSelect({ village: villageName(feature), layerId: "population" }) })}/></Pane>;
+  return <LayerPane layer={layer}><GeoJSON key={`${JSON.stringify(colors)}-${selected?.village || ""}`} data={geojson} style={(feature) => ({ color: selected?.village === villageName(feature) ? "#111827" : "#374151", weight: selected?.village === villageName(feature) ? 4 : 1.5, fillColor: colors[villageKey(feature)] || DEFAULT_VILLAGE_COLORS[0], fillOpacity: 1 })} onEachFeature={(feature, item) => item.on({ click: () => onSelect({ village: villageName(feature), layerId: "population" }) })}/></LayerPane>;
 }
 function Choropleth({ layer, geojson, selected, onSelect }) {
   const itemRef = useRef(null), scale = choroplethScale(layer), series = layer.series[0], patternId = `no-data-${layer.id.replace(/[^A-Za-z0-9_-]/g, "")}`;
@@ -25,7 +32,7 @@ function Choropleth({ layer, geojson, selected, onSelect }) {
     stripe.setAttribute("d", "M-2,2 L2,-2 M0,8 L8,0 M6,10 L10,6"); stripe.setAttribute("stroke", "#94a3b8"); stripe.setAttribute("stroke-width", "2");
     pattern.append(background, stripe); defs.append(pattern); svg.prepend(defs);
   }, [patternId, geojson]);
-  return <Pane name={layer.id} style={{ zIndex: layer.zIndex }}><GeoJSON ref={itemRef} key={`${layer.id}-${JSON.stringify(layer.values)}-${selected?.village || ""}`} data={geojson} style={(feature) => {
+  return <LayerPane layer={layer}><GeoJSON ref={itemRef} key={`${layer.id}-${JSON.stringify(layer.values)}-${selected?.village || ""}`} data={geojson} style={(feature) => {
     const village = villageName(feature), value = layer.values?.[village]?.[series.id], hasValue = Number.isFinite(Number(value)), active = selected?.village === village && selected?.layerId === layer.id;
     return { color: active ? "#111827" : "#334155", weight: active ? 4 : 1.5, fillColor: hasValue ? scale.color(value) : `url(#${patternId})`, fillOpacity: .8 };
   }} onEachFeature={(feature, shape) => {
@@ -33,34 +40,57 @@ function Choropleth({ layer, geojson, selected, onSelect }) {
     const tooltip = document.createElement("div"), heading = document.createElement("strong"), detail = document.createElement("span");
     heading.textContent = `${village} · ${layer.name}`; detail.className = "map-tooltip-row"; detail.textContent = `${series.name}：${text}`; tooltip.append(heading, detail); shape.bindTooltip(tooltip);
     shape.on({ click: () => onSelect({ village, layerId: layer.id }) });
-  }}/></Pane>;
+  }}/></LayerPane>;
 }
 function Charts({ layer, geojson, zoom, selected, onSelect }) {
-  return <Pane name={layer.id} style={{ zIndex: layer.zIndex }}>{geojson.features.map((feature) => {
+  return <LayerPane layer={layer}>{geojson.features.map((feature) => {
     const village = villageName(feature), position = featureInteriorPoint(feature); if (!position) return null;
     const chart = chartHtml(layer, village, chartSize(zoom));
     const icon = L.divIcon({ className: `react-chart-icon ${selected?.village === village && selected?.layerId === layer.id ? "selected" : ""}`, html: chart.html, iconSize: [chart.size, chart.size], iconAnchor: [chart.size / 2, chart.size / 2] });
     const row = layer.values?.[village] || {};
     return <Marker key={`${layer.id}-${village}-${zoom}`} position={position} icon={icon} keyboard eventHandlers={{ click: () => onSelect({ village, layerId: layer.id }) }} title={`${village} ${layer.name}`}><Tooltip direction="top"><strong>{village} · {layer.name}</strong>{layer.series.map((series) => <span className="map-tooltip-row" key={series.id}>{series.name}：{row[series.id] ?? "—"}</span>)}</Tooltip></Marker>;
-  })}</Pane>;
+  })}</LayerPane>;
 }
 function Labels({ layer, geojson, positions, onMove }) {
-  return <Pane name={layer.id} style={{ zIndex: layer.zIndex }}>{geojson.features.map((feature) => {
+  return <LayerPane layer={layer}>{geojson.features.map((feature) => {
     const id = villageKey(feature), name = villageName(feature), position = positions[id] ? [positions[id].lat, positions[id].lng] : featureInteriorPoint(feature); if (!position) return null;
     const icon = L.divIcon({ className: "react-village-label", html: `<span>${name}</span>`, iconSize: null });
     return <Marker key={`${id}-${position}`} position={position} icon={icon} draggable keyboard title={`${name}（可拖曳）`} eventHandlers={{ dragend: (event) => { const point = event.target.getLatLng(); onMove(id, { lat: point.lat, lng: point.lng }); } }}/>;
-  })}</Pane>;
+  })}</LayerPane>;
 }
-export default function MapCanvas({ geojson, layers, colors, backgroundColor, labelPositions, selected, onSelect, onLabelMove, onMap, zoom, onZoom }) {
+const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
+export function normalizedTitlePosition(clientX, clientY, containerRect, titleRect, offset = { x: 0, y: 0 }) {
+  const width = Math.max(1, containerRect.width), height = Math.max(1, containerRect.height);
+  const halfWidth = Math.min(titleRect.width / 2, width / 2), halfHeight = Math.min(titleRect.height / 2, height / 2);
+  const centerX = clamp(clientX - offset.x - containerRect.left, halfWidth, width - halfWidth);
+  const centerY = clamp(clientY - offset.y - containerRect.top, halfHeight, height - halfHeight);
+  return { x: centerX / width, y: centerY / height };
+}
+export function Title({ layer, settings, onMove }) {
+  const dragging = useRef(false), offset = useRef({ x: 0, y: 0 });
+  if (!settings.text.trim()) return null;
+  const move = (event) => {
+    if (!dragging.current) return;
+    event.preventDefault(); event.stopPropagation();
+    onMove(normalizedTitlePosition(event.clientX, event.clientY, event.currentTarget.parentElement.getBoundingClientRect(), event.currentTarget.getBoundingClientRect(), offset.current));
+  };
+  return <div className="react-map-title" role="heading" aria-level="1" style={{ left: `${settings.position.x * 100}%`, top: `${settings.position.y * 100}%`, zIndex: layer.zIndex, color: settings.color, fontSize: `${settings.fontSize}px` }} onPointerDown={(event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    dragging.current = true; offset.current = { x: event.clientX - (rect.left + rect.width / 2), y: event.clientY - (rect.top + rect.height / 2) };
+    event.currentTarget.setPointerCapture?.(event.pointerId); event.preventDefault(); event.stopPropagation();
+  }} onPointerMove={move} onPointerUp={(event) => { dragging.current = false; event.currentTarget.releasePointerCapture?.(event.pointerId); event.stopPropagation(); }} onPointerCancel={() => { dragging.current = false; }}>{settings.text}</div>;
+}
+export default function MapCanvas({ geojson, layers, colors, backgroundColor, labelPositions, titleSettings, selected, onSelect, onLabelMove, onTitleMove, onMap, zoom, onZoom }) {
   if (!geojson) return <div className="map-loading" role="status">正在載入地圖資料…</div>;
-  return <MapContainer className="map" style={{ backgroundColor }} center={[23.52, 119.58]} zoom={13} scrollWheelZoom={false} attributionControl={false} zoomSnap={0.25}>
+  const visibleLayers = layers.filter((layer) => layer.visible), titleIndex = visibleLayers.findIndex((layer) => layer.kind === "title"), titleLayer = titleIndex < 0 ? null : { ...visibleLayers[titleIndex], zIndex: 800 + titleIndex * 20 };
+  return <div className="map-stage"><MapContainer className="map" style={{ backgroundColor }} center={[23.52, 119.58]} zoom={13} scrollWheelZoom={false} attributionControl={false} zoomSnap={0.25}>
     <MapLifecycle geojson={geojson} onMap={onMap} onZoom={onZoom}/>
-    {layers.filter((layer) => layer.visible).map((layer, index) => {
+    {visibleLayers.filter((layer) => layer.kind !== "title").map((layer, index) => {
       const item = { ...layer, zIndex: 400 + index * 20 };
       if (item.kind === "boundary") return <Boundary key={item.id} layer={item} geojson={geojson} colors={colors} selected={selected} onSelect={onSelect}/>;
       if (item.kind === "choropleth") return <Choropleth key={item.id} layer={item} geojson={geojson} selected={selected} onSelect={onSelect}/>;
       if (item.kind === "labels") return <Labels key={item.id} layer={item} geojson={geojson} positions={labelPositions} onMove={onLabelMove}/>;
       return <Charts key={`${item.id}-${JSON.stringify(item.values)}`} layer={item} geojson={geojson} zoom={zoom} selected={selected} onSelect={onSelect}/>;
     })}
-  </MapContainer>;
+  </MapContainer>{titleLayer && <Title layer={titleLayer} settings={titleSettings} onMove={onTitleMove}/>}</div>;
 }

@@ -18,6 +18,11 @@ describe("map reducer", () => {
     const state = { ...initialState, labelPositions: { village: { lat: 23, lng: 119 } } };
     expect(reducer(state, { type: "resetLabels" }).labelPositions).toEqual({});
   });
+  it("updates title appearance and restores its default position", () => {
+    const updated = reducer(initialState, { type: "title", changes: { text: "我的地圖", fontSize: 48, color: "#123456", position: { x: 0.2, y: 0.3 } } });
+    expect(updated.titleSettings).toEqual({ text: "我的地圖", fontSize: 48, color: "#123456", position: { x: 0.2, y: 0.3 } });
+    expect(reducer(updated, { type: "resetTitlePosition" }).titleSettings.position).toEqual({ x: 0.5, y: 0.08 });
+  });
   it("updates population values without replacing concurrently loaded layers", () => {
     const state = { ...initialState, layers: [{ id: "population", values: {} }, { id: "new-layer", values: { A: { x: 1 } } }] };
     const values = { A: { male: 10, female: 11 } };

@@ -10,12 +10,17 @@ describe("map layer definitions", () => {
 
     const merged = mergeLayers(custom, saved, current, { male: "#112233", female: "#aabbcc" });
 
-    expect(merged.map((layer) => layer.id)).toEqual(["custom", "population", "boundary", "village-labels"]);
+    expect(merged.map((layer) => layer.id)).toEqual(["custom", "population", "boundary", "village-labels", "map-title"]);
     expect(merged.find((layer) => layer.id === "population")).toMatchObject({
       visible: false,
       values,
       series: [{ color: "#112233" }, { color: "#aabbcc" }],
     });
+  });
+
+  it("adds a visible title above new and previously saved workspaces", () => {
+    expect(builtInLayers().at(-1)).toMatchObject({ id: "map-title", kind: "title", visible: true });
+    expect(mergeLayers([], [{ id: "boundary", visible: true }]).at(-1)).toMatchObject({ id: "map-title", visible: true });
   });
 
   it("normalizes population rows for the built-in series", () => {
