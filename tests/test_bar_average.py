@@ -101,7 +101,7 @@ def test_bar_average_page_renders_controls_and_active_navigation():
     assert response.text.count('class="year-cb"') == 2
     for metric in ("總人口", "年出生", "年死亡", "扶老比", "出生率", "自然增加率"):
         assert f'<option value="{metric}"' in response.text
-    assert "/static/js/bar_average.js?v=6" in response.text
+    assert "/static/js/bar_average.js?v=7" in response.text
     assert "chart.js@4.4.9" in response.text
     assert 'id="comparison-average-visible" type="checkbox" checked' in response.text
     assert 'id="comparison-focused-scale" type="checkbox" checked' in response.text
@@ -132,7 +132,7 @@ def test_bar_average_script_uses_focused_axis_and_value_labels():
     assert 'textBaseline = isNegative ? "top" : "bottom"' in script
     assert "plugins: [comparisonValueLabels]" in script
     assert "let focusedScaleEnabled = true" in script
-    assert "if (!focusedScaleEnabled) return" in script
+    assert "if (!focusedScaleEnabled) return" not in script
     assert "beginAtZero: !focusedScaleEnabled" in script
     assert 'grace: focusedScaleEnabled ? "10%" : 0' in script
     assert '.addEventListener("change", updateFocusedScale)' in script

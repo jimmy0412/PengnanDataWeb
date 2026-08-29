@@ -36,7 +36,6 @@ function formatComparisonValue(value, unit) {
 const comparisonValueLabels = {
   id: "comparisonValueLabels",
   afterDatasetsDraw(chart) {
-    if (!focusedScaleEnabled) return;
     const { ctx, chartArea } = chart;
     chart.data.datasets.forEach((dataset, datasetIndex) => {
       if (dataset.type !== "bar" || !chart.isDatasetVisible(datasetIndex)) return;
