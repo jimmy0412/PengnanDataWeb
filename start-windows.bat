@@ -19,6 +19,13 @@ rem   start-windows.bat --no-reload --no-browser
 rem Always work relative to this script, even when launched by double-click.
 cd /d "%~dp0"
 
+call "%~dp0update-windows.bat"
+if errorlevel 1 (
+    echo.
+    echo WARNING: Git update check failed. Starting with the existing local version.
+    echo.
+)
+
 set "PORT=8000"
 set "LISTEN_HOST=127.0.0.1"
 set "RELOAD_ARG=--reload"
