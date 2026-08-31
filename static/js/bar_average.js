@@ -38,27 +38,37 @@ const comparisonValueLabels = {
   afterDatasetsDraw(chart) {
     const { ctx, chartArea } = chart;
     chart.data.datasets.forEach((dataset, datasetIndex) => {
-      if (dataset.type !== "bar" || !chart.isDatasetVisible(datasetIndex)) return;
+      if (!["bar", "line"].includes(dataset.type) || !chart.isDatasetVisible(datasetIndex)) return;
       const metadata = chart.getDatasetMeta(datasetIndex);
-      metadata.data.forEach((bar, dataIndex) => {
+      metadata.data.forEach((element, dataIndex) => {
         const rawValue = dataset.data[dataIndex];
         if (rawValue == null || !Number.isFinite(Number(rawValue))) return;
         const value = Number(rawValue);
-        const isNegative = value < 0;
-        const y = isNegative
-          ? Math.min(chartArea.bottom - 2, bar.y + 6)
-          : Math.max(chartArea.top + 2, bar.y - 6);
+        const barValue = chart.data.datasets.find((item) => item.type === "bar")
+          ?.data[dataIndex];
+        const isBelow = dataset.type === "line"
+          ? !Number.isFinite(Number(barValue)) || Number(barValue) >= 0
+          : value < 0;
+        const offset = dataset.type === "line" ? 9 : 6;
+        const y = isBelow
+          ? Math.min(chartArea.bottom - 14, element.y + offset)
+          : Math.max(chartArea.top + 14, element.y - offset);
 
         ctx.save();
-        ctx.fillStyle = "#1f2937";
+        ctx.fillStyle = dataset.type === "line" ? dataset.borderColor : "#1f2937";
         ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
         ctx.lineWidth = 3;
         ctx.font = "600 12px sans-serif";
         ctx.textAlign = "center";
-        ctx.textBaseline = isNegative ? "top" : "bottom";
+        ctx.textBaseline = isBelow ? "top" : "bottom";
         const label = formatComparisonValue(value);
-        ctx.strokeText(label, bar.x, y);
-        ctx.fillText(label, bar.x, y);
+        const halfWidth = ctx.measureText(label).width / 2;
+        const x = Math.max(
+          chartArea.left + halfWidth + 2,
+          Math.min(chartArea.right - halfWidth - 2, element.x)
+        );
+        ctx.strokeText(label, x, y);
+        ctx.fillText(label, x, y);
         ctx.restore();
       });
     });

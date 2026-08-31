@@ -1,6 +1,7 @@
 import React, { forwardRef, useState } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { useMapEvents } from "react-leaflet";
 
 vi.mock("react-leaflet", () => ({
   GeoJSON: () => null,
@@ -15,7 +16,36 @@ vi.mock("react-leaflet", () => ({
   useMapEvents: vi.fn(),
 }));
 
-import MapCanvas, { LayerPane, normalizedTitlePosition, Title } from "./MapCanvas";
+import MapCanvas, { interactionHandlers, LayerPane, normalizedTitlePosition, shouldToggleSelection, Title } from "./MapCanvas";
+
+describe("map feature interactions", () => {
+  it("uses temporary hover on pointer devices and ignores desktop clicks", () => {
+    window.matchMedia = vi.fn(() => ({ matches: true }));
+    const onHover = vi.fn(), onToggle = vi.fn(), value = { village: "鐵線里", layerId: "population" };
+    const handlers = interactionHandlers(value, onHover, onToggle);
+    handlers.mouseover();
+    handlers.mouseout();
+    handlers.click({ originalEvent: { detail: 1, pointerType: "mouse" } });
+    expect(onHover.mock.calls).toEqual([[value], [null]]);
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+
+  it("toggles touch and keyboard activations", () => {
+    const onToggle = vi.fn(), value = { village: "山水里", layerId: "chart" };
+    window.matchMedia = vi.fn(() => ({ matches: false }));
+    interactionHandlers(value, vi.fn(), onToggle).click({});
+    expect(onToggle).toHaveBeenCalledWith(value);
+    window.matchMedia = vi.fn(() => ({ matches: true }));
+    expect(shouldToggleSelection({ originalEvent: { detail: 0 } })).toBe(true);
+  });
+
+  it("clears a persistent selection when the map background is clicked", () => {
+    const onClearSelection = vi.fn();
+    render(<MapCanvas geojson={{ type: "FeatureCollection", features: [] }} layers={[]} colors={{}} backgroundColor="#aad3df" labelPositions={{}} titleSettings={{ text: "", position: { x: .5, y: .08 } }} active={null} onHover={() => {}} onToggle={() => {}} onClearSelection={onClearSelection} onLabelMove={() => {}} onTitleMove={() => {}} onMap={() => {}} zoom={13} onZoom={() => {}}/>);
+    useMapEvents.mock.calls.at(-1)[0].click();
+    expect(onClearSelection).toHaveBeenCalledOnce();
+  });
+});
 
 describe("LayerPane", () => {
   it("updates the existing Leaflet pane z-index when a layer moves", () => {

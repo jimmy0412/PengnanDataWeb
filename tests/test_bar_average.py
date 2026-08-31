@@ -101,7 +101,7 @@ def test_bar_average_page_renders_controls_and_active_navigation():
     assert response.text.count('class="year-cb"') == 2
     for metric in ("總人口", "年出生", "年死亡", "扶老比", "出生率", "自然增加率"):
         assert f'<option value="{metric}"' in response.text
-    assert "/static/js/bar_average.js?v=7" in response.text
+    assert "/static/js/bar_average.js?v=8" in response.text
     assert "chart.js@4.4.9" in response.text
     assert 'id="comparison-average-visible" type="checkbox" checked' in response.text
     assert 'id="comparison-focused-scale" type="checkbox" checked' in response.text
@@ -126,11 +126,12 @@ def test_bar_average_script_uses_focused_axis_and_value_labels():
     script = Path("static/js/bar_average.js").read_text(encoding="utf-8")
 
     assert 'id: "comparisonValueLabels"' in script
-    assert 'dataset.type !== "bar"' in script
+    assert '["bar", "line"].includes(dataset.type)' in script
     assert "rawValue == null" in script
     assert "Number.isFinite(Number(rawValue))" in script
-    assert 'textBaseline = isNegative ? "top" : "bottom"' in script
+    assert 'textBaseline = isBelow ? "top" : "bottom"' in script
     assert "plugins: [comparisonValueLabels]" in script
+    assert 'dataset.type === "line" ? dataset.borderColor' in script
     assert "let focusedScaleEnabled = true" in script
     assert "if (!focusedScaleEnabled) return" not in script
     assert "beginAtZero: !focusedScaleEnabled" in script

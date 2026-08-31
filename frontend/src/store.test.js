@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialState, reducer } from "./store";
+import { activeSelection, initialState, reducer } from "./store";
 
 describe("map reducer", () => {
   it("toggles and keyboard-moves layers without mutation", () => {
@@ -13,6 +13,17 @@ describe("map reducer", () => {
     const updated = reducer(initialState, { type: "backgroundColor", color: "#abcdef" });
     expect(updated.mapBackgroundColor).toBe("#abcdef");
     expect(updated.villageColors).toEqual({});
+  });
+  it("prefers transient hover and toggles a persistent touch selection", () => {
+    const selected = { village: "鐵線里", layerId: "population" };
+    const hovered = { village: "鎖港里", layerId: "chart" };
+    const withSelection = reducer(initialState, { type: "toggleSelect", value: selected });
+    expect(activeSelection(withSelection)).toEqual(selected);
+    const withHover = reducer(withSelection, { type: "hover", value: hovered });
+    expect(activeSelection(withHover)).toEqual(hovered);
+    expect(activeSelection(reducer(withHover, { type: "hover", value: null }))).toEqual(selected);
+    expect(reducer(withSelection, { type: "toggleSelect", value: selected }).selected).toBeNull();
+    expect(reducer(withSelection, { type: "clearSelect" }).selected).toBeNull();
   });
   it("restores every village label to its initial position", () => {
     const state = { ...initialState, labelPositions: { village: { lat: 23, lng: 119 } } };

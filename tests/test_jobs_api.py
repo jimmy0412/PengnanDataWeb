@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 from unittest.mock import patch
 
 import httpx
@@ -79,12 +80,26 @@ def test_chart_and_table_pages_render_checkbox_year_pickers():
     assert 'id="chart-years" multiple' not in indicators_response.text
     assert indicators_response.text.count('class="year-cb"') == 2
     assert "/static/js/common.js?v=2" in indicators_response.text
-
+    assert 'id="line-values-visible" type="checkbox"' in indicators_response.text
+    assert 'id="line-values-visible" type="checkbox" checked' not in indicators_response.text
+    assert "/static/js/indicators.js?v=3" in indicators_response.text
     assert tables_response.status_code == 200
     assert 'id="pivot-years" class="year-checks"' in tables_response.text
     assert 'id="table-years" class="year-checks"' in tables_response.text
     assert tables_response.text.count('class="year-cb"') == 4
     assert "/static/js/common.js?v=2" in tables_response.text
+
+
+def test_indicator_script_supports_optional_value_labels_without_refreshing_data():
+    script = Path("static/js/indicators.js").read_text(encoding="utf-8")
+
+    assert "let lineValueLabelsVisible = false" in script
+    assert 'id: "lineValueLabels"' in script
+    assert "rawValue == null" in script
+    assert "Number.isFinite(Number(rawValue))" in script
+    assert "plugins: [lineValueLabels]" in script
+    assert 'lineChart.update("none")' in script
+    assert '.addEventListener("change", updateLineValueLabels)' in script
 
 
 def test_table_details_are_collapsed_by_default():

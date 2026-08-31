@@ -24,10 +24,17 @@ describe("LayerPanel", () => {
     expect(dispatch).toHaveBeenCalledWith({ type: "move", id: "map-title", delta: -1 });
   });
 
-  it("offers a reset button beside the village-label layer", () => {
+  it("offers a compact reset button after the village-label title", () => {
     const dispatch = vi.fn();
-    render(<LayerPanel layers={[{ id: "village-labels", name: "地名", kind: "labels", visible: true }]} dispatch={dispatch} onDelete={() => {}}/>);
-    fireEvent.click(screen.getByRole("button", { name: "還原位置" }));
+    const { container } = render(<LayerPanel layers={[{ id: "village-labels", name: "地名標籤", kind: "labels", visible: true }]} dispatch={dispatch} onDelete={() => {}}/>);
+    const button = screen.getByRole("button", { name: "還原地名位置" });
+    const label = screen.getByRole("checkbox", { name: "地名標籤" }).closest("label");
+    expect(button).toHaveTextContent("↺");
+    expect(button).toHaveAttribute("title", "還原所有地名位置");
+    expect(button.previousElementSibling).toBe(label);
+    expect(label.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(container.querySelector(".layer-label-reset")).toBe(button);
+    fireEvent.click(button);
     expect(dispatch).toHaveBeenCalledWith({ type: "resetLabels" });
   });
 

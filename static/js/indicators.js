@@ -1,4 +1,5 @@
 let lineChart = null;
+let lineValueLabelsVisible = false;
 
 const LINE_METRICS = () => window.LINE_CHART_METRICS || [];
 
@@ -17,6 +18,46 @@ function selectedLineMetric() {
 function lineChartTitle(metric, gender) {
   return `${metric.label}（${gender}，單位：${metric.unit}）`;
 }
+
+function formatLineValue(value) {
+  return new Intl.NumberFormat("zh-TW", { maximumFractionDigits: 2 }).format(value);
+}
+
+const lineValueLabels = {
+  id: "lineValueLabels",
+  afterDatasetsDraw(chart) {
+    if (!lineValueLabelsVisible) return;
+    const { ctx, chartArea } = chart;
+    chart.data.datasets.forEach((dataset, datasetIndex) => {
+      if (!chart.isDatasetVisible(datasetIndex)) return;
+      const metadata = chart.getDatasetMeta(datasetIndex);
+      metadata.data.forEach((point, dataIndex) => {
+        const rawValue = dataset.data[dataIndex];
+        if (rawValue == null || !Number.isFinite(Number(rawValue))) return;
+        const below = datasetIndex % 2 === 1;
+        const y = below
+          ? Math.min(chartArea.bottom - 13, point.y + 7)
+          : Math.max(chartArea.top + 13, point.y - 7);
+        ctx.save();
+        ctx.fillStyle = dataset.borderColor || "#1f2937";
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+        ctx.lineWidth = 3;
+        ctx.font = "600 11px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = below ? "top" : "bottom";
+        const label = formatLineValue(Number(rawValue));
+        const halfWidth = ctx.measureText(label).width / 2;
+        const x = Math.max(
+          chartArea.left + halfWidth + 2,
+          Math.min(chartArea.right - halfWidth - 2, point.x)
+        );
+        ctx.strokeText(label, x, y);
+        ctx.fillText(label, x, y);
+        ctx.restore();
+      });
+    });
+  },
+};
 
 function applyLineColorInputs() {
   const colors = getColors();
@@ -126,7 +167,13 @@ function lineChartConfig(years, villages, data, colors, metric, gender) {
       datasets: lineDatasets(years, villages, data, colors, metric),
     },
     options: lineChartOptions(metric, gender),
+    plugins: [lineValueLabels],
   };
+}
+
+function updateLineValueLabels() {
+  lineValueLabelsVisible = document.getElementById("line-values-visible").checked;
+  if (lineChart) lineChart.update("none");
 }
 
 function updateLineChartTitle(metric, gender) {
@@ -204,6 +251,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("btn-refresh").addEventListener("click", refreshLineChart);
   document.getElementById("line-gender").addEventListener("change", refreshLineChart);
   document.getElementById("line-metric").addEventListener("change", refreshLineChart);
+  document
+    .getElementById("line-values-visible")
+    .addEventListener("change", updateLineValueLabels);
   document.getElementById("chart-years").addEventListener("change", (e) => {
     if (e.target.classList.contains("year-cb")) refreshLineChart();
   });
