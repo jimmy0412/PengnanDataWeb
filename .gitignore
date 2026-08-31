@@ -7,5 +7,5 @@ data/processed/*.json
 data/processed/*.ods
 !data/samples/
 node_modules/
-data/processed/map_layers/catalog.v1.*.bak.json
+data/processed/map_layers/catalog*.json
 Todo
