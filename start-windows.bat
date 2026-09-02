@@ -75,8 +75,10 @@ if errorlevel 1 goto :invalid_port
 if %PORT% LSS 1 goto :invalid_port
 if %PORT% GTR 65535 goto :invalid_port
 
-if not exist ".venv\Scripts\python.exe" (
-    echo ERROR: Virtual environment not found. Run install-windows.bat first.
+where python >nul 2>&1
+if errorlevel 1 (
+    echo ERROR: Python was not found in PATH.
+    echo Install Python and select "Add Python to PATH", then try again.
     goto :failed
 )
 
@@ -85,9 +87,10 @@ if not exist "requirements.txt" (
     goto :failed
 )
 
-".venv\Scripts\python.exe" -c "import fastapi, uvicorn" >nul 2>&1
+python -c "import fastapi, uvicorn" >nul 2>&1
 if errorlevel 1 (
-    echo ERROR: Website dependencies are incomplete. Run install-windows.bat again.
+    echo ERROR: Website dependencies are not installed for the default Python.
+    echo Run: python -m pip install -r requirements.txt
     goto :failed
 )
 
@@ -102,7 +105,7 @@ echo Press Ctrl+C to stop it.
 
 if "%OPEN_BROWSER%"=="1" start "" "%URL%"
 
-".venv\Scripts\python.exe" -m uvicorn app.main:app --host "%LISTEN_HOST%" --port "%PORT%" %RELOAD_ARG%
+python -m uvicorn app.main:app --host "%LISTEN_HOST%" --port "%PORT%" %RELOAD_ARG%
 exit /b %ERRORLEVEL%
 
 :missing_port
