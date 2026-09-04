@@ -61,8 +61,12 @@ async function downloadElementAsImage(element, basename, format) {
   triggerDownload(url, `${basename}.${isJpg ? "jpg" : "png"}`);
 }
 
-function bindChartExportButtons(chartGetter, basenameGetter) {
-  document.querySelectorAll("[data-export-chart]").forEach((btn) => {
+function bindChartExportButtons(
+  chartGetter,
+  basenameGetter,
+  selector = "[data-export-chart]"
+) {
+  document.querySelectorAll(selector).forEach((btn) => {
     btn.addEventListener("click", () => {
       const format = btn.dataset.exportFormat || "png";
       downloadChart(chartGetter(), basenameGetter(), format);

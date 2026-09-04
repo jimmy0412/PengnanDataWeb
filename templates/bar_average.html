@@ -1,105 +1,126 @@
 {% extends "base.html" %}
 {% block title %}年度長條比較 - 澎湖澎南區人口資料{% endblock %}
-{% block subtitle %}比較單一里歷年指標與澎南七里平均{% endblock %}
+{% block subtitle %}比較歷年、七里及出生率與扶老比指標{% endblock %}
 
 {% block head_extra %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
 {% endblock %}
 
+{% macro year_checks(container_id, input_class) %}
+<div id="{{ container_id }}" class="year-checks" role="group" aria-label="年份">
+  {% for year in processed_years %}
+  <label><input class="year-cb {{ input_class }}" type="checkbox" value="{{ year }}" checked /> {{ year }}</label>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro village_select(select_id, default_region=false) %}
+<select id="{{ select_id }}">
+  <option value="{{ all_villages_label }}"{% if default_region %} selected{% endif %}>{{ all_villages_label }}</option>
+  {% for village in villages %}
+  <option value="{{ village }}"{% if not default_region and loop.first %} selected{% endif %}>{{ village }}</option>
+  {% endfor %}
+</select>
+{% endmacro %}
+
+{% macro gender_select(select_id) %}
+<select id="{{ select_id }}">
+  <option value="全部" selected>全部</option>
+  <option value="男">男</option>
+  <option value="女">女</option>
+</select>
+{% endmacro %}
+
+{% macro metric_select(select_id) %}
+<select id="{{ select_id }}">
+  {% for metric in comparison_chart_metrics %}
+  <option value="{{ metric.key }}"{% if loop.first %} selected{% endif %}>{{ metric.label }}</option>
+  {% endfor %}
+</select>
+{% endmacro %}
+
 {% block content %}
-<section class="card">
-  <h2>圖表設定</h2>
-  <div class="row">
+<section class="card chart-card" aria-labelledby="comparison-chart-heading">
+  <h2 id="comparison-chart-heading">歷年長條與七里平均</h2>
+  <div class="row chart-settings">
     <div class="field">
       <span class="field-label">年份（可複選）</span>
-      <div id="comparison-years" class="year-checks" role="group" aria-label="年份">
-        {% for year in processed_years %}
-        <label><input class="year-cb" type="checkbox" value="{{ year }}" checked /> {{ year }}</label>
-        {% endfor %}
-      </div>
+      {{ year_checks("comparison-years", "comparison-year-cb") }}
     </div>
+    <div class="field"><label for="comparison-village">里別</label>{{ village_select("comparison-village") }}</div>
+    <div class="field"><label for="comparison-gender">性別</label>{{ gender_select("comparison-gender") }}</div>
+    <div class="field"><label for="comparison-metric">指標</label>{{ metric_select("comparison-metric") }}</div>
+    <div class="field title-field"><label for="comparison-title">圖表標題（留白為自動）</label><input id="comparison-title" type="text" maxlength="120" placeholder="自動產生標題" /></div>
+    <div class="field"><label for="comparison-bar-color">柱狀顏色</label><input id="comparison-bar-color" type="color" /></div>
+    <div class="field"><label for="comparison-average-color">平均折線顏色</label><input id="comparison-average-color" type="color" /></div>
     <div class="field">
-      <label for="comparison-village">里別</label>
-      <select id="comparison-village">
-        {% for village in villages %}
-        <option value="{{ village }}">{{ village }}</option>
-        {% endfor %}
-      </select>
+      <label for="comparison-bar-width">Bar 寬度：<output id="comparison-bar-width-value" for="comparison-bar-width">70%</output></label>
+      <input id="comparison-bar-width" type="range" min="10" max="100" step="5" value="70" />
     </div>
-    <div class="field">
-      <label for="comparison-gender">性別</label>
-      <select id="comparison-gender">
-        <option value="全部" selected>全部</option>
-        <option value="男">男</option>
-        <option value="女">女</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="comparison-metric">指標</label>
-      <select id="comparison-metric">
-        {% for metric in comparison_chart_metrics %}
-        <option value="{{ metric.key }}"{% if loop.first %} selected{% endif %}>{{ metric.label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="field">
-      <label for="comparison-bar-color">柱狀顏色</label>
-      <input id="comparison-bar-color" type="color" />
-    </div>
-    <div class="field">
-      <label for="comparison-average-color">平均折線顏色</label>
-      <input id="comparison-average-color" type="color" />
-    </div>
-    <div class="field">
-      <label for="comparison-bar-width">
-        Bar 寬度：<output id="comparison-bar-width-value" for="comparison-bar-width">70%</output>
-      </label>
-      <input
-        id="comparison-bar-width"
-        type="range"
-        min="10"
-        max="100"
-        step="5"
-        value="70"
-      />
-    </div>
+    <div class="field"><span class="field-label">平均線</span><label><input id="comparison-average-visible" type="checkbox" checked /> 顯示七里平均線</label></div>
+    <div class="field"><span class="field-label">數值尺度</span><label><input id="comparison-focused-scale" type="checkbox" checked /> 放大細微差異</label></div>
     <button id="comparison-refresh" type="button" class="secondary">更新圖表</button>
-    <div class="field">
-      <span class="field-label">平均線</span>
-      <label>
-        <input id="comparison-average-visible" type="checkbox" checked />
-        顯示七里平均線
-      </label>
-    </div>
-    <div class="field">
-      <span class="field-label">數值尺度</span>
-      <label>
-        <input id="comparison-focused-scale" type="checkbox" checked />
-        放大細微差異
-      </label>
-    </div>
   </div>
-</section>
-
-<section class="card">
-  <h2 id="comparison-chart-heading">歷年長條與七里平均</h2>
   <div class="export-toolbar">
     <span class="hint">下載圖表：</span>
-    <button type="button" class="secondary" data-export-chart data-export-format="png">PNG</button>
-    <button type="button" class="secondary" data-export-chart data-export-format="jpg">JPG</button>
+    <button type="button" class="secondary" data-export-chart data-chart="comparison" data-export-format="png">PNG</button>
+    <button type="button" class="secondary" data-export-chart data-chart="comparison" data-export-format="jpg">JPG</button>
   </div>
-  <div class="chart-box">
-    <canvas id="comparison-chart" role="img" aria-label="單一里歷年指標與七里平均比較圖"></canvas>
-  </div>
+  <div class="chart-box"><canvas id="comparison-chart" role="img" aria-label="單一地區歷年指標與七里平均比較圖"></canvas></div>
+  <p id="comparison-status" class="hint chart-status" role="status"></p>
   <p class="hint">勾選「放大細微差異」時，Y 軸會依目前顯示的資料範圍自動縮放，請搭配柱頂數值判讀。</p>
+</section>
+
+<section class="card chart-card" aria-labelledby="village-chart-heading">
+  <h2 id="village-chart-heading">多年份七里比較</h2>
+  <div class="row chart-settings">
+    <div class="field">
+      <span class="field-label">年份（可複選）</span>
+      {{ year_checks("village-years", "village-year-cb") }}
+    </div>
+    <div class="field"><label for="village-gender">性別</label>{{ gender_select("village-gender") }}</div>
+    <div class="field"><label for="village-metric">指標</label>{{ metric_select("village-metric") }}</div>
+    <div class="field title-field"><label for="village-title">圖表標題（留白為自動）</label><input id="village-title" type="text" maxlength="120" placeholder="自動產生標題" /></div>
+    <button id="village-refresh" type="button" class="secondary">更新圖表</button>
+  </div>
+  <div class="export-toolbar">
+    <span class="hint">下載圖表：</span>
+    <button type="button" class="secondary" data-export-chart data-chart="village" data-export-format="png">PNG</button>
+    <button type="button" class="secondary" data-export-chart data-chart="village" data-export-format="jpg">JPG</button>
+  </div>
+  <div class="chart-box"><canvas id="village-chart" role="img" aria-label="多年份澎南七里指標群組比較圖"></canvas></div>
+  <p id="village-status" class="hint chart-status" role="status"></p>
+</section>
+
+<section class="card chart-card" aria-labelledby="dual-chart-heading">
+  <h2 id="dual-chart-heading">出生率與扶老比歷年比較</h2>
+  <div class="row chart-settings">
+    <div class="field">
+      <span class="field-label">年份（可複選）</span>
+      {{ year_checks("dual-years", "dual-year-cb") }}
+    </div>
+    <div class="field"><label for="dual-village">里別</label>{{ village_select("dual-village", true) }}</div>
+    <div class="field"><label for="dual-gender">性別</label>{{ gender_select("dual-gender") }}</div>
+    <div class="field title-field"><label for="dual-title">圖表標題（留白為自動）</label><input id="dual-title" type="text" maxlength="120" placeholder="自動產生標題" /></div>
+    <button id="dual-refresh" type="button" class="secondary">更新圖表</button>
+  </div>
+  <div class="export-toolbar">
+    <span class="hint">下載圖表：</span>
+    <button type="button" class="secondary" data-export-chart data-chart="dual" data-export-format="png">PNG</button>
+    <button type="button" class="secondary" data-export-chart data-chart="dual" data-export-format="jpg">JPG</button>
+  </div>
+  <div class="chart-box"><canvas id="dual-chart" role="img" aria-label="出生率與扶老比歷年並列比較圖"></canvas></div>
+  <p id="dual-status" class="hint chart-status" role="status"></p>
 </section>
 {% endblock %}
 
 {% block scripts %}
 <script>
+  window.VILLAGES = {{ villages | tojson }};
+  window.ALL_VILLAGES_LABEL = {{ all_villages_label | tojson }};
   window.COMPARISON_CHART_METRICS = {{ comparison_chart_metrics | tojson }};
 </script>
 <script src="/static/js/common.js?v=4"></script>
-<script src="/static/js/export.js"></script>
-<script src="/static/js/bar_average.js?v=8"></script>
+<script src="/static/js/export.js?v=2"></script>
+<script src="/static/js/bar_average.js?v=10"></script>
 {% endblock %}

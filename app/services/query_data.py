@@ -270,7 +270,7 @@ def build_indicator_comparison(
     gender: str,
     metric: str,
 ) -> list[dict]:
-    """Compare one village with the arithmetic mean of available target villages."""
+    """Compare one village/region with the arithmetic mean of target villages."""
     sorted_years = sorted(set(years))
     records = query_indicators(sorted_years, TARGET_VILLAGES, gender)
     by_year_village = {
@@ -278,6 +278,15 @@ def build_indicator_comparison(
         for row in records
         if row.get("里") in TARGET_VILLAGES
     }
+    aggregate_by_year = {}
+    if village == ALL_VILLAGES_LABEL:
+        aggregate_by_year = {
+            int(row["年份"]): row
+            for row in query_indicators(
+                sorted_years, [ALL_VILLAGES_LABEL], gender
+            )
+            if row.get("里") == ALL_VILLAGES_LABEL
+        }
 
     def finite_value(row: dict | None) -> int | float | None:
         value = row.get(metric) if row else None
@@ -292,7 +301,12 @@ def build_indicator_comparison(
             for target in TARGET_VILLAGES
             if (value := finite_value(by_year_village.get((year, target)))) is not None
         ]
-        selected_value = finite_value(by_year_village.get((year, village)))
+        selected_row = (
+            aggregate_by_year.get(year)
+            if village == ALL_VILLAGES_LABEL
+            else by_year_village.get((year, village))
+        )
+        selected_value = finite_value(selected_row)
         series.append(
             {
                 "year": year,

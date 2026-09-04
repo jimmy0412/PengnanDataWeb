@@ -53,7 +53,7 @@ npm test          # Vitest 與 React Testing Library
 | `/` | 下載政府資料、彙整 ODS |
 | `/pyramid` | 人口金字塔（單一年份、單一里或**全部里**合計） |
 | `/indicators` | 年度指標折線圖（扶老比、出生率、自然增加率等；多年份、多里或**全部里**） |
-| `/bar-average` | 單一里歷年指標柱狀圖，並疊加各年度七里算術平均折線 |
+| `/bar-average` | 地區歷年指標與七里平均、多年份七里群組比較、出生率與扶老比並列比較 |
 | `/tables` | 以表格檢視年齡結構與年度指標 |
 | `/map` | 澎南區 7 里圖層工作區（可拖曳地圖標題、人口圖表、指標填色、共享 CSV 圖表與高解析 PNG 下載） |
 
@@ -63,7 +63,7 @@ npm test          # Vitest 與 React Testing Library
    處理期間頁面會顯示目前階段與粗略完成百分比。
 2. 至「人口金字塔」選擇年份與里別（含「澎南區」七里合計）。
 3. 至「年度指標」選擇指標、勾選要比較的里別與年份。
-4. 至「年度長條比較」選擇單一里、年份、性別與指標，比較該里數值和各年度七里算術平均。
+4. 至「年度長條比較」可比較單一里或澎南區的歷年指標與七里平均、在多個年份中逐年並列七里指標，或以左右雙軸比較歷年出生率與扶老比；每張圖皆可自訂標題與下載圖片。
 5. 至「資料表格」使用橫向表格（年份為欄、指標為列）或明細表格。
 6. 彙整後會產出兩份 ODS：**年齡結構**、**戶政指標**（分開下載）。
 7. 地圖標題、圖層順序、區域與內建人口圖表顏色會存入瀏覽器 `localStorage`；共享圓餅圖與甜甜圈圖配色則寫入伺服器 catalog。
@@ -129,7 +129,7 @@ templates/        網頁模板
 | GET | `/api/status` | 處理狀態 |
 | GET | `/api/age-structure` | 五年齡組資料 |
 | GET | `/api/indicators` | 年度指標 |
-| GET | `/api/indicator-comparison` | 單一里歷年指標及各年度七里算術平均 |
+| GET | `/api/indicator-comparison` | 單一里或澎南區歷年指標及各年度七里算術平均 |
 | GET | `/api/download/ods` | 下載統整 ODS |
 | GET | `/api/map-custom-layers` | 讀取共享地圖圖層 |
 | POST | `/api/map-custom-layers` | 上傳共享 CSV 地圖圖層（multipart：`name`、`chart_type`、`file`） |

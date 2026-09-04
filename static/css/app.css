@@ -352,6 +352,19 @@ a.download-link {
   margin-top: 0.5rem;
 }
 
+.chart-settings {
+  margin-bottom: 1rem;
+}
+
+.chart-settings .title-field {
+  flex: 1 1 260px;
+}
+
+.chart-status {
+  min-height: 1.35rem;
+  margin-top: 0.5rem;
+}
+
 .export-toolbar {
   display: flex;
   flex-wrap: wrap;

@@ -223,7 +223,7 @@ async def api_indicator_comparison(
     metric_meta = next(
         (item for item in COMPARISON_CHART_METRICS if item["key"] == metric), None
     )
-    if village not in TARGET_VILLAGES:
+    if village not in TARGET_VILLAGES and village != ALL_VILLAGES_LABEL:
         raise HTTPException(status_code=400, detail=f"不支援的里別：{village}")
     if metric_meta is None:
         raise HTTPException(status_code=400, detail=f"不支援的指標：{metric}")
